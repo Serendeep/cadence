@@ -12,7 +12,7 @@
     "lint": "oxlint",
     "dist:linux": "npm run build && electron-builder --linux AppImage pacman",
     "dist:win": "npm run build && electron-builder --win nsis",
-    "dist:mac": "npm run build && electron-builder --mac"
+    "dist:mac": "npm run build && electron-builder --mac --publish never"
   },
   "dependencies": {
     "@fontsource-variable/jetbrains-mono": "^5.3.0",
