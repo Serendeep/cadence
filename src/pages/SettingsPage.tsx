@@ -1,0 +1,249 @@
+import { AnimatePresence } from 'motion/react'
+import { useEffect, useRef, useState } from 'react'
+import { Segmented, Switch } from '../components/Bits'
+import { clearAll, db, importData } from '../lib/db'
+import { connectCube, connectExternal, disconnectCube, disconnectExternal, useDevices, type CubeKind } from '../lib/deviceStore'
+import { bluetoothAvailable } from '../lib/devices'
+import { makeBackup, parseImport, toCstimer } from '../lib/importExport'
+import { setSettings, useSettings, type ThemeName } from '../lib/settings'
+import { toast } from '../lib/toast'
+import { playCall, VOICES } from '../lib/voice'
+import { Dialog } from './SolvesPage'
+
+const THEME_SWATCH: Record<Exclude<ThemeName, 'system'>, [string, string, string]> = {
+  graphite: ['#141416', '#ecebe8', '#e2b714'],
+  nord: ['#242933', '#e5e9f0', '#88c0d0'],
+  matcha: ['#1d2420', '#e6ede8', '#7fd19b'],
+  paper: ['#f2f1ee', '#1b1b1b', '#c62f36'],
+  'mono-light': ['#ffffff', '#111111', '#2a62c9'],
+}
+
+function download(name: string, data: unknown) {
+  const url = URL.createObjectURL(new Blob([JSON.stringify(data)], { type: 'application/json' }))
+  const a = document.createElement('a')
+  a.href = url
+  a.download = name
+  a.click()
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
+}
+
+const stamp = () => new Date().toISOString().slice(0, 10)
+
+/** Scrolls its row into view once, for links that land on a specific setting. */
+function ScrollHere({ when }: { when: boolean }) {
+  const ref = useRef<HTMLSpanElement>(null)
+  useEffect(() => {
+    if (when) ref.current?.closest('.setting')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }, [when])
+  return <span ref={ref} hidden />
+}
+
+function Row({ title, desc, children, id }: { title: string; desc?: string; children: React.ReactNode; id?: string }) {
+  return (
+    <div className="setting" id={id}>
+      <div>
+        <h3>{title}</h3>
+        {desc && <p>{desc}</p>}
+      </div>
+      <div className="ctl">{children}</div>
+    </div>
+  )
+}
+
+export function SettingsPage() {
+  const s = useSettings()
+  const devices = useDevices()
+  const file = useRef<HTMLInputElement>(null)
+  const [busy, setBusy] = useState(false)
+  const [confirmClear, setConfirmClear] = useState(false)
+  const bt = bluetoothAvailable()
+
+  const onImport = async (f: File) => {
+    setBusy(true)
+    try {
+      const parsed = parseImport(await f.text())
+      const n = await importData(parsed)
+      toast(`Imported ${n.toLocaleString()} solves in ${parsed.sessions.length} sessions${parsed.skipped ? `, skipped ${parsed.skipped} unreadable rows` : ''}`)
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Import failed.')
+    } finally {
+      setBusy(false)
+      if (file.current) file.current.value = ''
+    }
+  }
+
+  const exportAll = async (format: 'backup' | 'cstimer') => {
+    const [sessions, solves] = await Promise.all([db.sessions.orderBy('order').toArray(), db.solves.orderBy('date').toArray()])
+    if (format === 'backup') download(`better-cstimer-${stamp()}.json`, makeBackup(sessions, solves))
+    else download(`cstimer-export-${stamp()}.txt`, toCstimer(sessions, solves))
+  }
+
+  const cube = (kind: CubeKind) => {
+    disconnectExternal()
+    setSettings({ input: 'smartcube' })
+    void connectCube(kind)
+  }
+
+  return (
+    <div className="page" style={{ maxWidth: 1100 }}>
+      <div className="pagehead">
+        <div>
+          <h1>Settings</h1>
+          <p>Saved on this device as you change them.</p>
+        </div>
+      </div>
+
+      <Row title="Theme" desc="System follows your OS: paper in light mode, graphite in dark.">
+        <button type="button" className="swatch" aria-pressed={s.theme === 'system'} onClick={() => setSettings({ theme: 'system' })}>
+          <span style={{ background: 'linear-gradient(90deg, #f2f1ee 50%, #141416 50%)' }} />
+          system
+        </button>
+        {(Object.keys(THEME_SWATCH) as (keyof typeof THEME_SWATCH)[]).map((t) => {
+          const [bg, fg, acc] = THEME_SWATCH[t]
+          return (
+            <button key={t} type="button" className="swatch" aria-pressed={s.theme === t} onClick={() => setSettings({ theme: t })}>
+              <span style={{ background: bg, color: fg, padding: '8px 10px', fontSize: 18, fontWeight: 500 }}>
+                12.84
+                <i style={{ background: acc }} />
+              </span>
+              {t.replace('-', ' ')}
+            </button>
+          )
+        })}
+      </Row>
+
+      <Row title="Inspection" desc="WCA 15 seconds. Starting after 15 s adds +2, after 17 s is a DNF. Blindfolded events skip it.">
+        <Switch label="Inspection" checked={s.inspection} onChange={(v) => setSettings({ inspection: v })} />
+        <span className="dim" style={{ fontSize: 14, marginLeft: 12 }}>Call out 8 s and 12 s</span>
+        <Segmented
+          id="voice"
+          label="Inspection voice"
+          value={s.inspectionVoice}
+          onChange={(v) => {
+            setSettings({ inspectionVoice: v })
+            playCall(v, 8000)
+          }}
+          options={VOICES.map((v) => ({ value: v, label: v }))}
+        />
+      </Row>
+
+      <Row title="Hold to start" desc="How long space or a touch must be held before the time turns green.">
+        <Segmented
+          id="hold"
+          label="Hold time"
+          value={s.holdMs}
+          onChange={(v) => setSettings({ holdMs: v })}
+          options={[0, 300, 550, 1000].map((v) => ({ value: v, label: v ? `${v / 1000} s` : 'instant' }))}
+        />
+      </Row>
+
+      <Row title="While solving" desc="Hide the running time if watching it distracts you.">
+        <Segmented
+          id="upd"
+          label="Timer display while solving"
+          value={s.timerUpdate}
+          onChange={(v) => setSettings({ timerUpdate: v })}
+          options={[
+            { value: 'live', label: 'live' },
+            { value: 'seconds', label: 'seconds' },
+            { value: 'hidden', label: 'hidden' },
+          ]}
+        />
+      </Row>
+
+      <Row title="Phases" desc="Tap space at the end of each phase; the last tap stops. Four phases are labelled cross, F2L, OLL and PLL.">
+        <Segmented
+          id="phases"
+          label="Phases"
+          value={s.phases}
+          onChange={(v) => setSettings({ phases: v })}
+          options={[1, 2, 3, 4].map((v) => ({ value: v, label: v === 1 ? 'off' : String(v) }))}
+        />
+      </Row>
+
+      <Row title="Precision and preview">
+        <Segmented id="dec" label="Decimals" value={s.decimals} onChange={(v) => setSettings({ decimals: v })} options={[{ value: 2, label: '0.01' }, { value: 3, label: '0.001' }]} />
+        <span className="dim" style={{ fontSize: 14, marginLeft: 12 }}>Scramble preview</span>
+        <Switch label="Scramble preview" checked={s.scramblePreview} onChange={(v) => setSettings({ scramblePreview: v })} />
+      </Row>
+
+      <Row
+        title="Timers and smart cubes"
+        desc={
+          bt
+            ? devices.cube
+              ? `Connected: ${devices.cube.name}${devices.cube.battery != null ? `, ${devices.cube.battery}%` : ''}.`
+              : devices.external
+                ? `Connected: ${devices.external.name}.`
+                : devices.connecting
+                  ? `Connecting the ${devices.connecting}…`
+                  : 'Nothing connected. The keyboard and touch always work.'
+            : 'Bluetooth is not available in this browser. Use the desktop app, or Chrome or Edge. The Stackmat works everywhere.'
+        }
+      >
+        <button type="button" className="btn" onClick={() => { disconnectCube(); setSettings({ input: 'stackmat' }); void connectExternal('stackmat') }}>Stackmat</button>
+        {bt && (
+          <>
+            <button type="button" className="btn" onClick={() => { disconnectCube(); setSettings({ input: 'gantimer' }); void connectExternal('gantimer') }}>GAN timer</button>
+            <button type="button" className="btn" onClick={() => cube('gan')}>GAN cube</button>
+            <button type="button" className="btn" onClick={() => cube('moyu32')}>MoYu V10 AI / MoYu32</button>
+            <button type="button" className="btn" onClick={() => cube('moyu')}>MoYu WeiLong AI</button>
+            <button type="button" className="btn" onClick={() => cube('other')}>GiiKER, GoCube, QiYi, HeyKube</button>
+          </>
+        )}
+        {(devices.cube || devices.external) && (
+          <button type="button" className="btn danger" onClick={() => { disconnectCube(); disconnectExternal(); setSettings({ input: 'keyboard' }) }}>
+            Disconnect
+          </button>
+        )}
+      </Row>
+
+      <Row id="import" title="Import from csTimer" desc="In csTimer open Export, choose Export to file, then pick that file here. A better-cstimer backup works too. Imported sessions are added next to yours.">
+        <ScrollHere when={location.hash.endsWith('?import')} />
+        <input ref={file} type="file" accept=".json,.txt,application/json,text/plain" className="visually-hidden" id="import-file" onChange={(e) => e.target.files?.[0] && void onImport(e.target.files[0])} />
+        <button type="button" className="btn primary" disabled={busy} onClick={() => file.current?.click()}>
+          {busy ? 'Importing…' : 'Choose file'}
+        </button>
+      </Row>
+
+      <Row title="Export" desc="A full backup of every session, or a file csTimer can import.">
+        <button type="button" className="btn" onClick={() => void exportAll('backup')}>Backup (.json)</button>
+        <button type="button" className="btn" onClick={() => void exportAll('cstimer')}>csTimer format</button>
+      </Row>
+
+      <Row title="Delete everything" desc="Removes all sessions and solves from this device. Settings stay.">
+        <button type="button" className="btn danger" onClick={() => setConfirmClear(true)}>Delete all data</button>
+      </Row>
+
+      <Row title="About" desc="Free software under the GNU GPL v3 or later.">
+        <p className="dim" style={{ fontSize: 14, margin: 0, maxWidth: 560 }}>
+          Scrambles and 3D cubes by cubing.js. GAN Bluetooth by gan-web-bluetooth. MoYu drivers, the Stackmat protocol and the inspection voices are adapted from csTimer by Shuang Chen.
+        </p>
+      </Row>
+
+      <AnimatePresence>
+        {confirmClear && (
+          <Dialog title="Delete all sessions and solves?" onClose={() => setConfirmClear(false)}>
+            <p className="dim">This cannot be undone. Export a backup first if you might want them back.</p>
+            <div className="row">
+              <button type="button" className="btn" onClick={() => setConfirmClear(false)}>Keep my data</button>
+              <button
+                type="button"
+                className="btn danger"
+                onClick={() => {
+                  setConfirmClear(false)
+                  void clearAll().then(() => {
+                    setSettings({ sessionId: null })
+                    toast('All data deleted')
+                  })
+                }}
+              >
+                Delete everything
+              </button>
+            </div>
+          </Dialog>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
