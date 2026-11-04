@@ -315,8 +315,6 @@ textarea { width: 100%; resize: vertical; min-height: 72px; }
 .solves-table td.comment { max-width: 260px; overflow: hidden; text-overflow: ellipsis; color: var(--dim); }
 .solves-table tr.dayrow { cursor: default; }
 /* without comments the numbers would spread across the full width */
-.solves-table.compact { width: auto; min-width: min(640px, 100%); }
-.solves-table.compact th.n + th.n, .solves-table.compact td.n + td.n { padding-left: 56px; }
 .solves-table tr.dayrow:hover { background: none; }
 .solves-table tr.dayrow td { height: 36px; padding-top: 14px; font-size: 12px; color: var(--faint); border-top: 0; text-align: left; }
 .drawer-nav { display: flex; gap: 2px; }

@@ -52,7 +52,7 @@ export function SolvesPage() {
   const newSession = () => void createSession(`Session ${sessions.length + 1}`, session?.event ?? '333').then((id) => setSettings({ sessionId: id }))
 
   return (
-    <div className="page">
+    <div className="page" style={{ maxWidth: 1100 }}>
       <div className="pagehead">
         <div>
           {renaming && session?.id != null ? (
@@ -112,7 +112,7 @@ export function SolvesPage() {
         </div>
       ) : (
         <>
-          <table className={`solves-table ${hasComments ? '' : 'compact'}`}>
+          <table className="solves-table">
             <thead>
               <tr>
                 <th className="n" style={{ width: 64 }}>#</th>
