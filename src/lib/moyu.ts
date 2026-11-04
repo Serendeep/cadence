@@ -5,6 +5,7 @@
  */
 import aesjs from 'aes-js'
 import type { SmartCubeConnection, SmartCubeHandlers } from './devices'
+import { moyuToScreen, type Quat } from './orientation'
 import { diag } from './diag'
 
 const MY32_SERVICE = '0783b03e-7735-b5a0-1760-a305d2795cb0'
@@ -27,8 +28,8 @@ export interface MacRequest {
 /** Asks the user for the cube's MAC address when it cannot be discovered; resolve null to cancel. */
 export type MacPrompt = (req: MacRequest) => Promise<string | null>
 
-// message types a correctly decrypted packet starts with: info, state, battery, move, gyro
-const MY32_TYPES = new Set([161, 163, 164, 165, 171])
+// message types a correctly decrypted packet starts with: info, state, battery, move, gyro, gyro ack
+const MY32_TYPES = new Set([161, 163, 164, 165, 171, 172])
 // how long the cube gets to answer our first requests before the address is presumed wrong
 const MY32_ANSWER_MS = 3000
 const MY32_HANDSHAKE_TRIES = 4
@@ -73,6 +74,7 @@ export type My32Message =
   | { type: 'state'; moveCount: number }
   | { type: 'battery'; level: number }
   | { type: 'moves'; moveCount: number; moves: string[]; gaps: number[] }
+  | { type: 'gyro'; q: Quat }
   | { type: 'other' }
 
 export function parseMy32(bytes: number[]): My32Message {
@@ -80,6 +82,12 @@ export function parseMy32(bytes: number[]): My32Message {
   const type = bits(v, 0, 8)
   if (type === 163) return { type: 'state', moveCount: bits(v, 152, 160) }
   if (type === 164) return { type: 'battery', level: bits(v, 8, 16) }
+  if (type === 171) {
+    // four little-endian int32 at bytes 1..16 in the order (w, x, -z, y), each scaled by 2^30
+    // (github.com/lukeburong/weilong-v10-ai-protocol); not cross-checked against a second source
+    const i32 = (k: number) => new DataView(Uint8Array.from(bytes.slice(1 + k * 4, 5 + k * 4)).buffer).getInt32(0, true) / 2 ** 30
+    return { type: 'gyro', q: { w: i32(0), x: i32(1), z: -i32(2), y: i32(3) } }
+  }
   if (type !== 165) return { type: 'other' }
   const moves: string[] = []
   const gaps: number[] = []
@@ -137,9 +145,10 @@ export async function connectMoyu32(h: SmartCubeHandlers, askMac: MacPrompt): Pr
   const service = await gatt.getPrimaryService(MY32_SERVICE)
   const read = await service.getCharacteristic(MY32_READ)
   const write = await service.getCharacteristic(MY32_WRITE)
-  const request = (opcode: number) => {
+  const request = (opcode: number, payload: number[] = []) => {
     const req = Array<number>(20).fill(0)
     req[0] = opcode
+    payload.forEach((b, i) => (req[1 + i] = b))
     return write.writeValue(new Uint8Array(codec.encode(req))).catch((e: unknown) => console.warn(`MoYu request ${opcode} failed`, e))
   }
 
@@ -160,6 +169,7 @@ export async function connectMoyu32(h: SmartCubeHandlers, askMac: MacPrompt): Pr
     const msg = parseMy32(bytes)
     if (msg.type === 'state' && lastCount === -1) lastCount = msg.moveCount
     else if (msg.type === 'battery') h.onBattery?.(msg.level)
+    else if (msg.type === 'gyro') h.onOrientation?.(moyuToScreen(msg.q), msg.q)
     else if (msg.type === 'moves' && msg.moveCount !== lastCount) {
       // several moves can arrive in one packet after a dropped notification; replay oldest first.
       // Without a state reply there is no previous count, so only the newest move is certain.
@@ -212,6 +222,8 @@ export async function connectMoyu32(h: SmartCubeHandlers, askMac: MacPrompt): Pr
   }
 
   diag('moyu32.handshake.ok', { name })
+  // 0xAC with byte 2 set switches the orientation stream on, cleared switches it off
+  await request(172, [0, h.gyro ? 1 : 0])
   return { name, markSolved: () => undefined, disconnect }
 }
 

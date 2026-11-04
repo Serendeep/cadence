@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { inspectionLabel } from '../hooks/useTimerEngine'
 import { CFOP_PHASES } from '../lib/cfop'
 import { crossSolved, f2lSolved, FACES, ollSolved, type CubeState } from '../lib/cube'
-import { disconnectCube, markCubeSolved, onCubeMove, useDevices } from '../lib/deviceStore'
+import { disconnectCube, markCubeSolved, onCubeMove, onCubeOrientation, resetCubeOrientation, useDevices } from '../lib/deviceStore'
 import { diag } from '../lib/diag'
 import { isBlind } from '../lib/events'
 import { setSettings } from '../lib/settings'
@@ -91,6 +91,10 @@ export function LabView({ data, settings, scramble, scrambleError, onNewScramble
   )
 
   useEffect(() => onCubeMove(onMove), [onMove])
+  useEffect(() => {
+    if (!settings.trackRotations) return
+    return onCubeOrientation((q) => twisty.current?.setOrientation(q))
+  }, [settings.trackRotations])
 
   useEffect(() => {
     if (tracker?.phase !== 'solving' && inspStart == null) return
@@ -146,6 +150,11 @@ export function LabView({ data, settings, scramble, scrambleError, onNewScramble
         <button type="button" className="btn ghost" onClick={markSolved}>
           Cube is solved
         </button>
+        {settings.trackRotations && (
+          <button type="button" className="btn ghost" onClick={resetCubeOrientation} title="Hold the cube white side up, green side facing you, then press">
+            Reset orientation
+          </button>
+        )}
         <button
           type="button"
           className="btn ghost"

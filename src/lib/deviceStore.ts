@@ -4,6 +4,8 @@ import {
   type ExternalTimerConnection, type SmartCubeConnection, type SmartCubeHandlers,
 } from './devices'
 import { diag } from './diag'
+import { relativeTo, type Quat } from './orientation'
+import { getSettings } from './settings'
 import type { MacRequest } from './moyu'
 import type { StackmatStatus } from './stackmat'
 
@@ -21,11 +23,20 @@ export interface DeviceState {
 
 type MoveListener = (move: string, at: number) => void
 type StatusListener = (status: StackmatStatus, time: number) => void
+type OrientationListener = (q: Quat) => void
 
 let state: DeviceState = { cube: null, external: null, connecting: null, error: null, macRequest: null }
 const listeners = new Set<() => void>()
 const moveListeners = new Set<MoveListener>()
 const statusListeners = new Set<StatusListener>()
+const orientationListeners = new Set<OrientationListener>()
+// home is the first reading after connecting or resetting, taken as white up, green front
+let home: Quat | null = null
+let rawSamplesLeft = 0
+let lastRawSample = 0
+// a handful of raw sensor readings after each reset, spaced out, so axis mix-ups can be read from the log
+const RAW_SAMPLES = 6
+const RAW_SAMPLE_GAP_MS = 1500
 let cubeConn: SmartCubeConnection | null = null
 let extConn: ExternalTimerConnection | null = null
 let macResolve: ((mac: string | null) => void) | null = null
@@ -36,7 +47,7 @@ function set(patch: Partial<DeviceState>) {
 }
 
 // dev only: lets layout checks fake a connected device; stripped from production builds
-if (import.meta.env.DEV) Object.assign(window, { __devices: { set } })
+if (import.meta.env.DEV) Object.assign(window, { __devices: { set, orient: (q: Quat) => onOrientation(q, q) } })
 
 export const useDevices = () =>
   useSyncExternalStore((l) => (listeners.add(l), () => listeners.delete(l)), () => state)
@@ -45,6 +56,30 @@ export function onCubeMove(l: MoveListener): () => void {
   moveListeners.add(l)
   return () => moveListeners.delete(l)
 }
+export function onCubeOrientation(l: OrientationListener): () => void {
+  orientationListeners.add(l)
+  return () => orientationListeners.delete(l)
+}
+
+/** Takes the cube's current orientation as home (white up, green front). */
+export function resetCubeOrientation(): void {
+  home = null
+  rawSamplesLeft = RAW_SAMPLES
+}
+
+function onOrientation(q: Quat, raw: Quat): void {
+  home ??= q
+  const now = performance.now()
+  if (rawSamplesLeft > 0 && now - lastRawSample > RAW_SAMPLE_GAP_MS) {
+    rawSamplesLeft--
+    lastRawSample = now
+    const r = (v: number) => Math.round(v * 1000) / 1000
+    diag('cube.orientation.raw', { x: r(raw.x), y: r(raw.y), z: r(raw.z), w: r(raw.w) })
+  }
+  const rel = relativeTo(home, q)
+  orientationListeners.forEach((l) => l(rel))
+}
+
 export function onTimerStatus(l: StatusListener): () => void {
   statusListeners.add(l)
   return () => statusListeners.delete(l)
@@ -73,11 +108,14 @@ export async function connectCube(kind: CubeKind): Promise<void> {
   const handlers: SmartCubeHandlers = {
     onMove: (m, at) => moveListeners.forEach((l) => l(m, at)),
     onBattery: (b) => state.cube && set({ cube: { ...state.cube, battery: b } }),
+    onOrientation,
+    gyro: getSettings().trackRotations,
     onDisconnect: () => {
       cubeConn = null
       set({ cube: null })
     },
   }
+  resetCubeOrientation()
   try {
     if (kind === 'gan') cubeConn = await connectGan(handlers)
     else if (kind === 'other') cubeConn = await connectOtherCube(handlers)

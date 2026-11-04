@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, test } from 'vitest'
 import { makeCodec, parseMy32 } from './moyu'
 
 describe('MoYu32 protocol', () => {
@@ -24,4 +24,15 @@ describe('MoYu32 protocol', () => {
     const bytes = Array.from({ length: 20 }, (_, i) => parseInt(b.slice(i * 8, i * 8 + 8), 2))
     expect(parseMy32(bytes)).toEqual({ type: 'moves', moveCount: 7, moves: ['R', "U'", 'F', "B'", 'D'], gaps: [120, 80, 60, 40, 20] })
   })
+})
+
+test('decodes the gyroscope quaternion from the published example packet', () => {
+  const hex = 'AB47882CFFF873493FA2B87509ECB43AFF000000'
+  const bytes = hex.match(/../g)!.map((h) => parseInt(h, 16))
+  const msg = parseMy32(bytes)
+  if (msg.type !== 'gyro') throw new Error(`expected gyro, got ${msg.type}`)
+  expect(msg.q.x).toBeCloseTo(0.9888582, 5)
+  expect(msg.q.y).toBeCloseTo(-0.012041826, 5)
+  expect(msg.q.z).toBeCloseTo(-0.14781013, 5)
+  expect(msg.q.w).toBeCloseTo(-0.012906962, 5)
 })

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { faceGrid, type CubeState, type Face } from '../lib/cube'
+import { angleBetween, IDENTITY, slerp, type Quat } from '../lib/orientation'
 
 export const STICKER: Record<Face, string> = {
   U: '#f5f5f5', D: '#f4d23a', F: '#2fa84f', B: '#2f6fd6', R: '#d8343a', L: '#f08a24',
@@ -35,6 +36,8 @@ const TWISTY_PUZZLE: Record<string, string> = {
 export interface TwistyHandle {
   addMove: (m: string) => void
   reset: (setup: string) => void
+  /** Turns the whole 3D cube to match the physical cube (screen axes) */
+  setOrientation: (q: Quat) => void
 }
 
 interface TwistyProps {
@@ -46,6 +49,11 @@ interface TwistyProps {
   onReady?: (h: TwistyHandle) => void
   label: string
 }
+
+// time constant of the orientation glide: higher is smoother but lags the real cube more
+const ORIENTATION_SMOOTHING_MS = 60
+// below this the cube is drawn where it should be; about a tenth of a degree
+const SETTLED_RAD = 0.002
 
 /** cubing.js TwistyPlayer, loaded lazily (it pulls in three.js). */
 export function Twisty({ event, setup = '', alg = '', visualization = '2D', controls = false, onReady, label }: TwistyProps) {
@@ -73,7 +81,30 @@ export function Twisty({ event, setup = '', alg = '', visualization = '2D', cont
       })
       el = player
       host.current.replaceChildren(player)
+      // Readings arrive in uneven Bluetooth bursts with sensor noise; each frame the cube glides a time-scaled share
+      // of the way to the newest reading, which hides both, and the loop stops once it has caught up
+      let target: Quat | null = null
+      let shown: Quat = IDENTITY
+      let frame = 0
+      let last = 0
+      const puzzle = player.experimentalCurrentThreeJSPuzzleObject()
+      const step = async (now: number) => {
+        frame = 0
+        if (!target || disposed) return
+        const dt = last ? Math.min(now - last, 100) : 16
+        last = now
+        shown = slerp(shown, target, 1 - Math.exp(-dt / ORIENTATION_SMOOTHING_MS))
+        const [obj, vantages] = await Promise.all([puzzle, player.experimentalCurrentVantages()])
+        obj.quaternion.set(shown.x, shown.y, shown.z, shown.w)
+        for (const v of vantages) void v.render()
+        if (angleBetween(shown, target) > SETTLED_RAD) frame = requestAnimationFrame((t) => void step(t))
+        else last = 0
+      }
       readyRef.current?.({
+        setOrientation: (q) => {
+          target = q
+          if (!frame) frame = requestAnimationFrame((t) => void step(t))
+        },
         addMove: (m) => player.experimentalAddMove(m, { cancel: false }),
         reset: (s) => {
           player.experimentalSetupAlg = s

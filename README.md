@@ -10,7 +10,7 @@ A speedcubing timer for the desktop, the browser and your phone. It keeps out of
 - **Inputs:** keyboard and touch, a Stackmat through the audio jack, the GAN Smart Timer, and smart cubes: GAN (Gen 2, 3 and 4), MoYu V10 AI / MoYu32, MoYu WeiLong AI, GiiKER, GoCube, QiYi and HeyKube.
 - **Smart cube lab.** A live 3D cube follows your turns. The app guides your scramble, starts on the first turn, stops when solved, and records every move for a 3D replay.
 - **Insights:** WCA averages (ao5 to ao1000), progress with rolling averages, the spread of your times, day-by-day trends, phase breakdowns, practice habits and a PB timeline.
-- **Your data stays local** in IndexedDB. It imports csTimer exports and exports to its own backup format or back to csTimer.
+- **Your data stays local** in IndexedDB. Diagnostics for device bugs are off unless you turn them on in Settings. It imports csTimer exports and exports to its own backup format or back to csTimer.
 
 ## Install
 

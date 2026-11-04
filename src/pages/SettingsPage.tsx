@@ -137,6 +137,10 @@ export function SettingsPage() {
         />
       </Row>
 
+      <Row title="Keep the screen on" desc="Stops the screen from dimming or locking while Cadence is open, so it is ready between solves.">
+        <Switch label="Keep the screen on" checked={s.keepAwake} onChange={(v) => setSettings({ keepAwake: v })} />
+      </Row>
+
       <Row title="Hold to start" desc="How long space or a touch must be held before the time turns green.">
         <Segmented
           id="hold"
@@ -210,6 +214,10 @@ export function SettingsPage() {
         )}
       </Row>
 
+      <Row title="Track cube rotations" desc="Smart cubes with a gyroscope (MoYu V10 AI, some GAN cubes) turn the on-screen cube with yours. Uses a little more of the cube's battery. Applies the next time the cube connects.">
+        <Switch label="Track cube rotations" checked={s.trackRotations} onChange={(v) => setSettings({ trackRotations: v })} />
+      </Row>
+
       <Row id="import" title="Import from csTimer" desc="In csTimer open Export, choose Export to file, then pick that file here. A Cadence backup works too. Imported sessions are added next to yours.">
         <ScrollHere when={location.hash.endsWith('?import')} />
         <input ref={file} type="file" accept=".json,.txt,application/json,text/plain" className="visually-hidden" id="import-file" onChange={(e) => e.target.files?.[0] && void onImport(e.target.files[0])} />
@@ -227,8 +235,8 @@ export function SettingsPage() {
         <button type="button" className="btn danger" onClick={() => setConfirmClear(true)}>Delete all data</button>
       </Row>
 
-      <Row title="Send diagnostics" desc="When a timer or cube fails to connect, Cadence sends the connection steps and error messages so the bug can be found and fixed. It never sends your solves, times or name.">
-        <Switch label="Send diagnostics" checked={s.diagnostics} onChange={(v) => setSettings({ diagnostics: v })} />
+      <Row title="Share diagnostics" desc="Off unless you turn it on. When on, Cadence sends device connection steps and error messages to help fix bugs with your timer or cube. It never sends your solves, times or name.">
+        <Switch label="Share diagnostics" checked={s.shareDiagnostics} onChange={(v) => setSettings({ shareDiagnostics: v })} />
       </Row>
 
       <Row title="About" desc="Free software under the GNU GPL v3 or later. If Cadence helps your solving, you can support its development.">

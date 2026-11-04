@@ -1,8 +1,13 @@
+import { ganToScreen, normalize, type Quat } from './orientation'
 import type { StackmatStatus } from './stackmat'
 
 export interface SmartCubeHandlers {
   onMove: (move: string, at: number) => void
   onBattery?: (percent: number) => void
+  /** Cube orientation in screen axes; `raw` is the sensor's own reading, for diagnostics */
+  onOrientation?: (q: Quat, raw: Quat) => void
+  /** Whether the user wants orientation streamed (costs cube battery) */
+  gyro?: boolean
   onDisconnect: () => void
 }
 
@@ -21,6 +26,7 @@ export async function connectGan(h: SmartCubeHandlers): Promise<SmartCubeConnect
   const sub = conn.events$.subscribe((ev) => {
     if (ev.type === 'MOVE') h.onMove(ev.move, ev.localTimestamp ?? performance.now())
     else if (ev.type === 'BATTERY') h.onBattery?.(ev.batteryLevel)
+    else if (ev.type === 'GYRO' && h.gyro) h.onOrientation?.(ganToScreen(normalize(ev.quaternion)), ev.quaternion)
     else if (ev.type === 'DISCONNECT') h.onDisconnect()
   })
   conn.sendCubeCommand({ type: 'REQUEST_BATTERY' }).catch(() => undefined)

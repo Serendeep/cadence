@@ -17,7 +17,10 @@ export interface Settings {
   sessionId: number | null
   decimals: 2 | 3
   scramblePreview: boolean
-  diagnostics: boolean
+  /** Opt-in; renamed from `diagnostics`, which defaulted on, so earlier saved values do not carry over */
+  shareDiagnostics: boolean
+  trackRotations: boolean
+  keepAwake: boolean
 }
 
 export const DEFAULTS: Settings = {
@@ -31,7 +34,9 @@ export const DEFAULTS: Settings = {
   sessionId: null,
   decimals: 2,
   scramblePreview: true,
-  diagnostics: true,
+  shareDiagnostics: false,
+  trackRotations: true,
+  keepAwake: true,
 }
 
 const KEY = 'better-cstimer:settings'
@@ -78,6 +83,12 @@ export function setSettings(patch: Partial<Settings>): void {
     // private mode or full storage: settings still apply for this visit
   }
   listeners.forEach((l) => l())
+}
+
+/** Calls `l` after every settings change; returns the unsubscribe. */
+export function subscribeSettings(l: () => void): () => void {
+  listeners.add(l)
+  return () => listeners.delete(l)
 }
 
 export function useSettings(): Settings {
