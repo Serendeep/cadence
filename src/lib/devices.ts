@@ -60,28 +60,8 @@ export interface ExternalTimerConnection {
 }
 
 export async function connectGanTimer(h: ExternalTimerHandlers): Promise<ExternalTimerConnection> {
-  const { connectGanTimer: connect, GanTimerState } = await import('gan-web-bluetooth')
-  const conn = await connect()
-  const map: Partial<Record<number, StackmatStatus>> = {
-    [GanTimerState.HANDS_ON]: 'both',
-    [GanTimerState.GET_SET]: 'ready',
-    [GanTimerState.RUNNING]: 'running',
-    [GanTimerState.STOPPED]: 'stopped',
-    [GanTimerState.IDLE]: 'idle',
-    [GanTimerState.HANDS_OFF]: 'idle',
-  }
-  const sub = conn.events$.subscribe((ev) => {
-    if (ev.state === GanTimerState.DISCONNECT) return h.onDisconnect()
-    const status = map[ev.state]
-    if (status) h.onStatus(status, ev.recordedTime?.asTimestamp ?? 0)
-  })
-  return {
-    name: 'GAN Smart Timer',
-    disconnect: () => {
-      sub.unsubscribe()
-      conn.disconnect()
-    },
-  }
+  const { connectGanTimerDevice } = await import('./ganTimer')
+  return connectGanTimerDevice((ev) => h.onStatus(ev.status, ev.time), h.onDisconnect)
 }
 
 const WORKLET = `class Tap extends AudioWorkletProcessor{process(i){const c=i[0]&&i[0][0];if(c)this.port.postMessage(c.slice(0));return true}}registerProcessor('stackmat-tap',Tap)`
@@ -133,5 +113,7 @@ export async function connectStackmat(h: ExternalTimerHandlers, deviceId?: strin
 export function errorMessage(e: unknown): string {
   if (e instanceof DOMException && e.name === 'NotFoundError') return 'No device was chosen.'
   if (e instanceof DOMException && e.name === 'NotAllowedError') return 'Permission was denied.'
+  if (e instanceof DOMException && e.name === 'NetworkError')
+    return 'The device did not accept the connection. Turn it off and on, keep it close, and try again.'
   return e instanceof Error ? e.message : 'Something went wrong while connecting.'
 }

@@ -107,6 +107,7 @@ main { position: relative; overflow: hidden auto; height: 100%; }
   transition: background-color 0.2s var(--ease), transform 0.12s var(--ease), color 0.2s;
   white-space: nowrap;
 }
+a.btn { text-decoration: none; }
 .btn:hover { background: var(--raised); }
 .btn:active { transform: scale(0.96); }
 .btn.primary { background: var(--fg); color: var(--bg); font-weight: 600; }
@@ -158,6 +159,13 @@ textarea { width: 100%; resize: vertical; min-height: 72px; }
 /* keep a long scramble clear of the corner preview */
 @media (min-width: 1001px) { .band.top .scramble { max-width: min(980px, calc(100% - 420px)); } }
 @media (max-width: 1000px) { .preview-corner { display: none; } }
+/* keyboard shortcuts mean nothing on a touchscreen */
+@media (hover: none) and (pointer: coarse) { .band.bottom .keys { display: none; } }
+/* short windows (a landscape tablet under its browser bar): trim spacing so the timer never scrolls */
+@media (max-height: 760px) {
+  .timer-page, .lab { padding-bottom: 16px; }
+  .stage { padding: 6px 0; }
+}
 /* balance the nav rail so the time sits on the window's centre line, not just the content area's */
 @media (min-width: 721px) { .timer-page { padding-right: calc(var(--pad) + var(--rail)); } }
 .cfg { display: flex; justify-content: center; flex-wrap: wrap; gap: 6px 26px; }
@@ -169,7 +177,7 @@ textarea { width: 100%; resize: vertical; min-height: 72px; }
 .scramble .tools { display: flex; justify-content: center; gap: 4px; margin-top: 8px; }
 .stage { position: relative; display: grid; place-items: center; align-content: center; padding: 18px 0; touch-action: none; }
 .bigtime {
-  font-weight: 500; font-size: clamp(88px, 17vw, 230px); line-height: 1; letter-spacing: -0.045em;
+  font-weight: 500; font-size: clamp(88px, min(17vw, 26vh), 230px); line-height: 1; letter-spacing: -0.045em;
   font-variant-numeric: tabular-nums; transition: color 0.18s linear; will-change: transform;
 }
 .bigtime.hold { color: var(--hold); }
@@ -244,9 +252,10 @@ textarea { width: 100%; resize: vertical; min-height: 72px; }
 .lab { display: grid; grid-template-columns: minmax(280px, 1fr) minmax(320px, 1fr); grid-template-rows: auto 1fr auto; gap: 18px 48px; min-height: 100%; padding-top: 22px; }
 .lab .conn { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--dim); flex-wrap: wrap; }
 .lab .conn i.live { width: 8px; height: 8px; border-radius: 50%; background: var(--good); }
-.lab .cube3d { min-height: 360px; position: relative; }
+.lab .cube3d { min-height: min(360px, 42vh); position: relative; }
 .lab .cube3d > div { position: absolute; inset: 0; }
-.lab .side { align-self: center; }
+.lab .cube3d .twisty-host { width: 100%; height: 100%; }
+.lab .labside { align-self: center; }
 .lab .labtime { font-family: var(--mono); font-size: clamp(64px, 9vw, 132px); font-weight: 500; letter-spacing: -0.05em; line-height: 1; font-variant-numeric: tabular-nums; transition: color 0.18s; }
 .lab .live-stats { display: flex; gap: 36px; margin-top: 20px; }
 .lab .live-stats div { font-size: 13px; color: var(--dim); }

@@ -227,10 +227,15 @@ export function SettingsPage() {
         <button type="button" className="btn danger" onClick={() => setConfirmClear(true)}>Delete all data</button>
       </Row>
 
-      <Row title="About" desc="Free software under the GNU GPL v3 or later.">
+      <Row title="Send diagnostics" desc="When a timer or cube fails to connect, Cadence sends the connection steps and error messages so the bug can be found and fixed. It never sends your solves, times or name.">
+        <Switch label="Send diagnostics" checked={s.diagnostics} onChange={(v) => setSettings({ diagnostics: v })} />
+      </Row>
+
+      <Row title="About" desc="Free software under the GNU GPL v3 or later. If Cadence helps your solving, you can support its development.">
         <p className="dim" style={{ fontSize: 14, margin: 0, maxWidth: 560 }}>
-          Scrambles and 3D cubes by cubing.js. GAN Bluetooth by gan-web-bluetooth. MoYu drivers, the Stackmat protocol and the inspection voices are adapted from csTimer by Shuang Chen.
+          Scrambles and 3D cubes by cubing.js. GAN Bluetooth by gan-web-bluetooth. MoYu and GAN timer drivers, the Stackmat protocol and the inspection voices are adapted from csTimer by Shuang Chen.
         </p>
+        <a className="btn" href="https://buymeacoffee.com/serendeep" target="_blank" rel="noreferrer">Buy me a coffee</a>
       </Row>
 
       <AnimatePresence>

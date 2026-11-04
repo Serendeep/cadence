@@ -2,6 +2,7 @@ import { AnimatePresence, motion, MotionConfig } from 'motion/react'
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { ChartIcon, CloseIcon, ListIcon, Mark, SettingsIcon, TimerIcon } from './components/icons'
 import { answerMac, clearDeviceError, useDevices } from './lib/deviceStore'
+import type { MacRequest } from './lib/moyu'
 import { useSettings, type ThemeName } from './lib/settings'
 import { dismissToast, toast, useToast } from './lib/toast'
 import { InsightsPage } from './pages/InsightsPage'
@@ -94,7 +95,7 @@ export default function App() {
       </div>
       <ToastHost />
       <BluetoothPicker />
-      <AnimatePresence>{devices.macRequest && <MacPrompt deviceName={devices.macRequest.deviceName} />}</AnimatePresence>
+      <AnimatePresence>{devices.macRequest && <MacPrompt {...devices.macRequest} />}</AnimatePresence>
     </MotionConfig>
   )
 }
@@ -180,14 +181,24 @@ function BluetoothPicker() {
   )
 }
 
-function MacPrompt({ deviceName }: { deviceName: string }) {
-  const [mac, setMac] = useState('')
+const MAC_HELP = /Linux/.test(navigator.userAgent) && !/Android/.test(navigator.userAgent) ? (
+  <>Run <span className="mono">bluetoothctl devices</span> in a terminal; the address is next to the cube's name.</>
+) : (
+  <>A Bluetooth scanner app such as nRF Connect shows it next to the cube's name.</>
+)
+
+function MacPrompt({ deviceName, suggested, failed }: MacRequest) {
+  const [mac, setMac] = useState(suggested ?? '')
   const valid = /^([0-9a-f]{2}[:-]){5}[0-9a-f]{2}$/i.test(mac.trim())
   return (
-    <Dialog title="Cube address needed" onClose={() => answerMac(null)}>
+    <Dialog title={failed ? 'Check the cube address' : 'Cube address needed'} onClose={() => answerMac(null)}>
       <p className="dim">
-        {deviceName} encrypts its moves with its Bluetooth address, and this system did not report it. Find it in your OS Bluetooth settings
-        (for example with <span className="mono">bluetoothctl devices</span>) and enter it here.
+        {failed ? (
+          <>{deviceName} did not answer using <span className="mono">{failed}</span>, so its moves can't be read. The cube encrypts its moves with its Bluetooth address, and that address is probably wrong.</>
+        ) : (
+          <>{deviceName} encrypts its moves with its Bluetooth address, and this system did not report it.</>
+        )}{' '}
+        {MAC_HELP}
       </p>
       <form
         onSubmit={(e) => {
@@ -196,11 +207,11 @@ function MacPrompt({ deviceName }: { deviceName: string }) {
         }}
       >
         <label htmlFor="mac" className="dim" style={{ fontSize: 13 }}>Bluetooth address</label>
-        <input id="mac" type="text" value={mac} onChange={(e) => setMac(e.target.value)} placeholder="CF:30:16:00:12:AB" autoFocus style={{ width: '100%', marginTop: 6 }} aria-describedby="mac-help" />
+        <input id="mac" type="text" value={mac} onChange={(e) => setMac(e.target.value)} placeholder="CF:30:16:00:12:AB" autoFocus spellCheck={false} autoCapitalize="characters" style={{ width: '100%', marginTop: 6 }} aria-describedby="mac-help" />
         <p id="mac-help" className="dim" style={{ fontSize: 12 }}>Six pairs of hex digits separated by colons.</p>
         <div className="row">
           <button type="button" className="btn" onClick={() => answerMac(null)}>Cancel</button>
-          <button type="submit" className="btn primary" disabled={!valid}>Connect</button>
+          <button type="submit" className="btn primary" disabled={!valid}>{failed ? 'Try again' : 'Connect'}</button>
         </div>
       </form>
     </Dialog>

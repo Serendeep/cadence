@@ -17,6 +17,7 @@ export interface Settings {
   sessionId: number | null
   decimals: 2 | 3
   scramblePreview: boolean
+  diagnostics: boolean
 }
 
 export const DEFAULTS: Settings = {
@@ -30,6 +31,7 @@ export const DEFAULTS: Settings = {
   sessionId: null,
   decimals: 2,
   scramblePreview: true,
+  diagnostics: true,
 }
 
 const KEY = 'better-cstimer:settings'

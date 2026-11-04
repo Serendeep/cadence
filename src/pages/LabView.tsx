@@ -4,6 +4,7 @@ import { inspectionLabel } from '../hooks/useTimerEngine'
 import { CFOP_PHASES } from '../lib/cfop'
 import { crossSolved, f2lSolved, FACES, ollSolved, type CubeState } from '../lib/cube'
 import { disconnectCube, markCubeSolved, onCubeMove, useDevices } from '../lib/deviceStore'
+import { diag } from '../lib/diag'
 import { isBlind } from '../lib/events'
 import { setSettings } from '../lib/settings'
 import { newTracker, resetTracker, scrambleHint, trackMove, type Tracker } from '../lib/smartSolve'
@@ -27,17 +28,22 @@ function cfopProgress(cube: CubeState): number {
 
 export function LabView({ data, settings, scramble, scrambleError, onNewScramble, onPrevious, save }: ViewProps) {
   const devices = useDevices()
-  const [tracker, setTracker] = useState<Tracker | null>(null)
+  const [tracker, setTrackerState] = useState<Tracker | null>(null)
   const [now, setNow] = useState(0)
   const [inspStart, setInspStart] = useState<number | null>(null)
   const [reached, setReached] = useState<number[]>([])
   const twisty = useRef<TwistyHandle | null>(null)
+  // the source of truth for move handling: moves can arrive faster than React re-renders, so each
+  // move must build on the previous move's result, never on the last rendered state
   const trackerRef = useRef(tracker)
+  const setTracker = useCallback((next: Tracker | null) => {
+    trackerRef.current = next
+    setTrackerState(next)
+  }, [])
   const inspRef = useRef(inspStart)
   const caller = useRef(inspectionCaller())
   const voiceRef = useRef(settings.inspectionVoice)
   useEffect(() => {
-    trackerRef.current = tracker
     inspRef.current = inspStart
     voiceRef.current = settings.inspectionVoice
   })
@@ -47,9 +53,10 @@ export function LabView({ data, settings, scramble, scrambleError, onNewScramble
   // a new scramble starts a new attempt; the physical cube is assumed solved after the last one
   useEffect(() => {
     if (!scramble) return
-    setTracker((t) => newTracker(scramble, t && t.phase !== 'solving' ? t.cube : undefined))
+    const t = trackerRef.current
+    setTracker(newTracker(scramble, t && t.phase !== 'solving' ? t.cube : undefined))
     setReached([])
-  }, [scramble])
+  }, [scramble, setTracker])
 
   useEffect(() => {
     if (tracker?.phase === 'armed' && inspect && inspStart == null) setInspStart(performance.now())
@@ -67,6 +74,7 @@ export function LabView({ data, settings, scramble, scrambleError, onNewScramble
         setReached((r) => (p > r.length ? [...r, ...Array(p - r.length).fill(Math.max(0, at - next.start))] : r))
       }
       if (finished) {
+        diag('lab.solve.finished', { moves: finished.moves.length, ms: finished.time })
         const insp = inspRef.current
         setInspStart(null)
         setNow(finished.time)
@@ -79,7 +87,7 @@ export function LabView({ data, settings, scramble, scrambleError, onNewScramble
         })
       }
     },
-    [save],
+    [save, setTracker],
   )
 
   useEffect(() => onCubeMove(onMove), [onMove])
@@ -105,7 +113,8 @@ export function LabView({ data, settings, scramble, scrambleError, onNewScramble
   const markSolved = () => {
     markCubeSolved()
     twisty.current?.reset('')
-    setTracker((t) => (t ? resetTracker(t) : t))
+    const t = trackerRef.current
+    setTracker(t ? resetTracker(t) : t)
     setReached([])
     setInspStart(null)
   }
@@ -155,7 +164,7 @@ export function LabView({ data, settings, scramble, scrambleError, onNewScramble
         <Twisty event="333" visualization="3D" label="Live view of your cube" onReady={(h) => (twisty.current = h)} />
       </div>
 
-      <div className="side">
+      <div className="labside">
         <div className="dim" style={{ fontSize: 13 }}>
           {solving ? 'Solving' : tracker?.phase === 'armed' ? 'Scrambled. The timer starts on your first turn.' : `Solve ${data.solves.length + 1}`}
         </div>

@@ -5,6 +5,7 @@
  */
 import aesjs from 'aes-js'
 import type { SmartCubeConnection, SmartCubeHandlers } from './devices'
+import { diag } from './diag'
 
 const MY32_SERVICE = '0783b03e-7735-b5a0-1760-a305d2795cb0'
 const MY32_READ = '0783b03e-7735-b5a0-1760-a305d2795cb1'
@@ -16,8 +17,21 @@ const MY32_CICS = [0, ...Array.from({ length: 255 }, (_, i) => (i + 1) << 8)]
 
 const MHC_UUID = (n: string) => `0000${n}-0000-1000-8000-00805f9b34fb`
 
+/** `suggested` prefills the field; `failed` is an address the cube did not answer to. */
+export interface MacRequest {
+  deviceName: string
+  suggested?: string
+  failed?: string
+}
+
 /** Asks the user for the cube's MAC address when it cannot be discovered; resolve null to cancel. */
-export type MacPrompt = (deviceName: string) => Promise<string | null>
+export type MacPrompt = (req: MacRequest) => Promise<string | null>
+
+// message types a correctly decrypted packet starts with: info, state, battery, move, gyro
+const MY32_TYPES = new Set([161, 163, 164, 165, 171])
+// how long the cube gets to answer our first requests before the address is presumed wrong
+const MY32_ANSWER_MS = 3000
+const MY32_HANDSHAKE_TRIES = 4
 
 /** GAN-style AES-128 codec: decrypts the last 16 bytes, then the first 16, each XORed with the IV. */
 export function makeCodec(mac: string) {
@@ -111,9 +125,13 @@ export async function connectMoyu32(h: SmartCubeHandlers, askMac: MacPrompt): Pr
   })
   const name = device.name?.trim() ?? 'MoYu cube'
   const fromName = /^WCU_MY32_([0-9A-F]{2})([0-9A-F]{2})$/.exec(name)
-  const mac = (await macFromAdvertisement(device)) ?? (fromName ? `CF:30:16:00:${fromName[1]}:${fromName[2]}` : await askMac(name))
+  // shortcut: the name only gives the last two bytes; the rest is the usual MoYu prefix, corrected by the prompt below if wrong
+  const guess = fromName ? `CF:30:16:00:${fromName[1]}:${fromName[2]}` : undefined
+  const advertised = await macFromAdvertisement(device)
+  diag('moyu32.mac', { name, source: advertised ? 'advertisement' : guess ? 'name' : 'prompt' })
+  let mac = advertised ?? guess ?? (await askMac({ deviceName: name }))
   if (!mac) throw new Error('The cube needs its MAC address to decrypt its moves.')
-  const codec = makeCodec(mac)
+  let codec = makeCodec(mac)
 
   const gatt = await device.gatt!.connect()
   const service = await gatt.getPrimaryService(MY32_SERVICE)
@@ -122,20 +140,32 @@ export async function connectMoyu32(h: SmartCubeHandlers, askMac: MacPrompt): Pr
   const request = (opcode: number) => {
     const req = Array<number>(20).fill(0)
     req[0] = opcode
-    return write.writeValue(new Uint8Array(codec.encode(req))).catch(() => undefined)
+    return write.writeValue(new Uint8Array(codec.encode(req))).catch((e: unknown) => console.warn(`MoYu request ${opcode} failed`, e))
   }
 
   let lastCount = -1
+  let understood = false
+  let onUnderstood = () => {}
   const onData = (ev: Event) => {
     const at = performance.now()
     const value = (ev.target as BluetoothRemoteGATTCharacteristic).value
     if (!value) return
-    const msg = parseMy32(codec.decode(new Uint8Array(value.buffer)))
+    const bytes = codec.decode(new Uint8Array(value.buffer))
+    // a wrong address decrypts to noise; drop it rather than reading noise as moves
+    if (!MY32_TYPES.has(bytes[0])) return
+    if (!understood) {
+      understood = true
+      onUnderstood()
+    }
+    const msg = parseMy32(bytes)
     if (msg.type === 'state' && lastCount === -1) lastCount = msg.moveCount
     else if (msg.type === 'battery') h.onBattery?.(msg.level)
-    else if (msg.type === 'moves' && lastCount !== -1 && msg.moveCount !== lastCount) {
-      // several moves can arrive in one packet after a dropped notification; replay oldest first
-      const n = Math.min((msg.moveCount - lastCount) & 0xff, msg.moves.length)
+    else if (msg.type === 'moves' && msg.moveCount !== lastCount) {
+      // several moves can arrive in one packet after a dropped notification; replay oldest first.
+      // Without a state reply there is no previous count, so only the newest move is certain.
+      const missed = lastCount === -1 ? 0 : (msg.moveCount - lastCount) & 0xff
+      if (missed > msg.moves.length) diag('moyu32.moves.lost', { lost: missed - msg.moves.length }, 'warn')
+      const n = lastCount === -1 ? 1 : Math.min(missed, msg.moves.length)
       lastCount = msg.moveCount
       let t = at
       const stamped = msg.moves.slice(0, n).map((m, i) => {
@@ -149,18 +179,40 @@ export async function connectMoyu32(h: SmartCubeHandlers, askMac: MacPrompt): Pr
   read.addEventListener('characteristicvaluechanged', onData)
   await read.startNotifications()
   device.addEventListener('gattserverdisconnected', h.onDisconnect)
-  await request(161)
-  await request(163)
-  await request(164)
-
-  return {
-    name,
-    markSolved: () => undefined,
-    disconnect: () => {
-      read.removeEventListener('characteristicvaluechanged', onData)
-      gatt.disconnect()
-    },
+  const disconnect = () => {
+    read.removeEventListener('characteristicvaluechanged', onData)
+    gatt.disconnect()
   }
+
+  /** Sends the opening requests and reports whether anything decrypted correctly in reply. */
+  const handshake = () =>
+    new Promise<boolean>((resolve) => {
+      const timer = window.setTimeout(() => resolve(understood), MY32_ANSWER_MS)
+      onUnderstood = () => {
+        window.clearTimeout(timer)
+        resolve(true)
+      }
+      void request(161).then(() => request(163)).then(() => request(164))
+    })
+
+  // right after connecting the cube can take ~9 s to answer (seen on a V10 AI), so keep asking before doubting the address
+  const answered = async () => {
+    for (let i = 0; i < MY32_HANDSHAKE_TRIES; i++) if (await handshake()) return true
+    return false
+  }
+  while (!(await answered())) {
+    diag('moyu32.handshake.failed', { name }, 'warn')
+    const next = await askMac({ deviceName: name, suggested: mac, failed: mac })
+    if (!next) {
+      disconnect()
+      throw new Error('The cube did not answer, so its moves cannot be read. Check its Bluetooth address and connect again.')
+    }
+    mac = next
+    codec = makeCodec(mac)
+  }
+
+  diag('moyu32.handshake.ok', { name })
+  return { name, markSolved: () => undefined, disconnect }
 }
 
 /** Old MoYu WeiLong AI: each face reports rotation in ninths of a turn; a move is a crossing of the halfway mark. */

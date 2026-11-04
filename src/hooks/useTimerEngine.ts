@@ -136,15 +136,20 @@ export function useTimerEngine(cfg: EngineConfig, onFinish: (r: TimerResult) => 
   // external timers report their own state; mirror it
   useEffect(() => {
     if (cfg.source !== 'external' || !cfg.enabled) return
+    // hands went on the timer since the last result; without it, a 'stopped' is a stale display (a Stackmat shows its last time on connect)
+    let armed = false
     return onTimerStatus((status, time) => {
       const at = performance.now()
       const s = stateRef.current
       setSignal(status === 'both' || status === 'left' || status === 'right' ? 'hold' : status === 'ready' ? 'ready' : null)
+      if (status === 'both' || status === 'ready') armed = true
       if (status === 'running' && s.phase !== 'running') {
         const insp = s.phase === 'inspecting' ? s.inspStart : undefined
         commit({ phase: 'running', start: at - time, splits: [], penalty: insp != null ? inspectionPenalty(at - time - insp) : 'ok' })
-      } else if (status === 'stopped' && s.phase === 'running') {
-        const result: TimerResult = { time, penalty: s.penalty, splits: [time] }
+      } else if (status === 'stopped' && (s.phase === 'running' || (armed && time > 0 && s.phase !== 'stopped'))) {
+        // the stop packet carries the whole time, so a solve whose start packet was lost is still recorded
+        armed = false
+        const result: TimerResult = { time, penalty: s.phase === 'running' ? s.penalty : 'ok', splits: [time] }
         commit({ phase: 'stopped', result })
         setNow(time)
         finishRef.current(result)

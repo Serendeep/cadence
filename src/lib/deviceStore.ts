@@ -3,6 +3,8 @@ import {
   connectGan, connectGanTimer, connectOtherCube, connectStackmat, errorMessage,
   type ExternalTimerConnection, type SmartCubeConnection, type SmartCubeHandlers,
 } from './devices'
+import { diag } from './diag'
+import type { MacRequest } from './moyu'
 import type { StackmatStatus } from './stackmat'
 
 export type CubeKind = 'gan' | 'moyu32' | 'moyu' | 'other'
@@ -14,7 +16,7 @@ export interface DeviceState {
   connecting: string | null
   error: string | null
   /** Set while a MoYu cube waits for the user to type its MAC address */
-  macRequest: { deviceName: string } | null
+  macRequest: MacRequest | null
 }
 
 type MoveListener = (move: string, at: number) => void
@@ -33,6 +35,9 @@ function set(patch: Partial<DeviceState>) {
   listeners.forEach((l) => l())
 }
 
+// dev only: lets layout checks fake a connected device; stripped from production builds
+if (import.meta.env.DEV) Object.assign(window, { __devices: { set } })
+
 export const useDevices = () =>
   useSyncExternalStore((l) => (listeners.add(l), () => listeners.delete(l)), () => state)
 
@@ -49,10 +54,10 @@ const LABELS: Record<CubeKind | ExternalKind, string> = {
   gan: 'GAN cube', moyu32: 'MoYu cube', moyu: 'MoYu WeiLong AI', other: 'smart cube', stackmat: 'Stackmat', gantimer: 'GAN timer',
 }
 
-function askMac(deviceName: string): Promise<string | null> {
+function askMac(req: MacRequest): Promise<string | null> {
   return new Promise((resolve) => {
     macResolve = resolve
-    set({ macRequest: { deviceName } })
+    set({ macRequest: req })
   })
 }
 
@@ -81,7 +86,9 @@ export async function connectCube(kind: CubeKind): Promise<void> {
       cubeConn = kind === 'moyu32' ? await moyu.connectMoyu32(handlers, askMac) : await moyu.connectMoyuClassic(handlers)
     }
     set({ cube: { name: cubeConn.name, battery: null }, connecting: null })
+    diag('device.connected', { kind, name: cubeConn.name })
   } catch (e) {
+    diag('device.connect.failed', { kind, error: e }, 'error')
     set({ connecting: null, error: `Could not connect the ${LABELS[kind]}: ${errorMessage(e)}` })
   }
 }
@@ -107,7 +114,9 @@ export async function connectExternal(kind: ExternalKind): Promise<void> {
   try {
     extConn = kind === 'stackmat' ? await connectStackmat(handlers) : await connectGanTimer(handlers)
     set({ external: { name: extConn.name, kind }, connecting: null })
+    diag('device.connected', { kind, name: extConn.name })
   } catch (e) {
+    diag('device.connect.failed', { kind, error: e }, 'error')
     set({ connecting: null, error: `Could not connect the ${LABELS[kind]}: ${errorMessage(e)}` })
   }
 }

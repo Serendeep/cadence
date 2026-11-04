@@ -53,6 +53,10 @@ npm run build
 
 In a browser, Bluetooth works only in Chrome, Edge and Opera. Safari and Firefox get every feature except smart cubes and the GAN timer.
 
+## Support
+
+Cadence is free and has no ads. If it helps your solving, you can [buy me a coffee](https://buymeacoffee.com/serendeep).
+
 ## Licence
 
 GPL-3.0-or-later. The MoYu drivers and the Stackmat protocol details are adapted from [csTimer](https://github.com/cs0x7f/cstimer) by Shuang Chen. Scrambles and 3D cubes come from [cubing.js](https://github.com/cubing/cubing.js); GAN Bluetooth support from [gan-web-bluetooth](https://github.com/afedotov/gan-web-bluetooth).
