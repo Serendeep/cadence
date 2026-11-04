@@ -64,7 +64,7 @@ export function Results({ solves, stats, decimals, compact }: ResultsProps) {
         <div className="stat">ao12<b><AnimatedTime value={stats.current[12]} decimals={decimals} /></b></div>
         <div className="stat">best<b><AnimatedTime value={stats.best} decimals={decimals} /></b></div>
         <div className="stat quiet">mean<b><AnimatedTime value={stats.mean} decimals={decimals} /></b></div>
-        <div className="stat quiet">solves<b className="num">{stats.count}</b></div>
+        <div className="stat quiet count">solves<b className="num">{stats.count}</b></div>
       </div>
       {last && !compact && (
         <motion.div className="lastsolve" key={`ls${last.id}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15 }}>

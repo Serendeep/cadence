@@ -95,7 +95,9 @@ export function SettingsPage() {
 
       <Row title="Theme" desc="System follows your OS: paper in light mode, graphite in dark.">
         <button type="button" className="swatch" aria-pressed={s.theme === 'system'} onClick={() => setSettings({ theme: 'system' })}>
-          <span style={{ background: 'linear-gradient(90deg, #f2f1ee 50%, #141416 50%)' }} />
+          <span style={{ background: 'linear-gradient(90deg, #f2f1ee 50%, #141416 50%)', padding: '8px 10px', fontSize: 18, fontWeight: 500 }}>
+            <em className="split-sample">12.84</em>
+          </span>
           system
         </button>
         {(Object.keys(THEME_SWATCH) as (keyof typeof THEME_SWATCH)[]).map((t) => {
@@ -168,6 +170,7 @@ export function SettingsPage() {
       </Row>
 
       <Row
+        id="devices"
         title="Timers and smart cubes"
         desc={
           bt
@@ -181,6 +184,7 @@ export function SettingsPage() {
             : 'Bluetooth is not available in this browser. Use the desktop app, or Chrome or Edge. The Stackmat works everywhere.'
         }
       >
+        <ScrollHere when={location.hash.endsWith('?devices')} />
         <button type="button" className="btn" onClick={() => { disconnectCube(); setSettings({ input: 'stackmat' }); void connectExternal('stackmat') }}>Stackmat</button>
         {bt && (
           <>

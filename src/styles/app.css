@@ -127,8 +127,8 @@ input[type='text'], input[type='number'], textarea, select {
 textarea { width: 100%; resize: vertical; min-height: 72px; }
 .switch { position: relative; width: 36px; height: 20px; border-radius: 999px; background: var(--raised); border: 0; transition: background-color 0.2s; flex: none; }
 .switch::after { content: ''; position: absolute; top: 3px; left: 3px; width: 14px; height: 14px; border-radius: 50%; background: var(--dim); transition: transform 0.25s var(--ease), background-color 0.2s; }
-.switch[aria-checked='true'] { background: var(--good); }
-.switch[aria-checked='true']::after { transform: translateX(16px); background: var(--bg); }
+.switch[aria-checked='true'] { background: var(--acc); }
+.switch[aria-checked='true']::after { transform: translateX(16px); background: var(--acc-ink); }
 .seg { display: inline-flex; background: var(--surface); border-radius: 999px; padding: 3px; gap: 2px; }
 .seg button { border: 0; background: none; height: 30px; padding: 0 12px; border-radius: 999px; color: var(--dim); font-size: 13px; position: relative; }
 .seg button[aria-pressed='true'] { color: var(--fg); }
@@ -150,7 +150,7 @@ textarea { width: 100%; resize: vertical; min-height: 72px; }
 /* Equal top and bottom bands put the time on the screen's middle line; either band grows only if its content must. */
 .timer-page { display: grid; grid-template-rows: minmax(max-content, 1fr) auto minmax(max-content, 1fr); min-height: 100%; padding-top: 22px; user-select: none; }
 .band { display: flex; flex-direction: column; min-width: 0; }
-.band.top { justify-content: space-between; gap: 18px; }
+.band.top { gap: clamp(18px, 4vh, 40px); }
 .band.top .scramble { margin-top: 0; }
 .band.bottom .keys { margin-top: auto; padding-top: 20px; text-align: center; }
 .timer-page { position: relative; }
@@ -178,6 +178,9 @@ textarea { width: 100%; resize: vertical; min-height: 72px; }
 /* out of flow, so the digits themselves sit on the centre line */
 .stage .hint { position: absolute; left: 0; right: 0; bottom: -6px; color: var(--faint); font-size: 14px; text-align: center; }
 .results { width: min(980px, 100%); margin: 0 auto; }
+.firstrun { margin-top: 26px; text-align: center; font-size: 14px; color: var(--faint); }
+.firstrun a { color: var(--dim); text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; }
+.firstrun a:hover { color: var(--acc); }
 .side { position: absolute; top: 50%; transform: translateY(-50%); width: 210px; font-size: 13px; color: var(--dim); display: none; }
 .side.left { left: 0; }
 /* the rail-balancing padding leaves this much room past the stage's right edge */
@@ -203,9 +206,10 @@ textarea { width: 100%; resize: vertical; min-height: 72px; }
 .trend circle.dnf { fill: var(--bad); }
 .trend path { fill: none; stroke: var(--acc); stroke-width: 1.6; stroke-linejoin: round; }
 .phasebar { display: flex; gap: 3px; height: 12px; }
-.phasebar i { display: block; border-radius: 3px; transform-origin: left center; }
+/* the white cross segment needs an edge on light themes */
+.phasebar i { display: block; border-radius: 3px; transform-origin: left center; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--fg) 16%, transparent); }
 .phaselabels { display: flex; gap: 3px; margin-top: 8px; font-size: 13px; color: var(--dim); }
-.phaselabels div { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; min-width: 0; }
+.phaselabels div { white-space: nowrap; padding-right: 10px; }
 .phaselabels b { color: var(--fg); font-weight: 500; }
 .statrow { display: flex; flex-wrap: wrap; justify-content: center; text-align: center; gap: 14px 52px; margin-top: 26px; }
 .stat { font-size: 13px; color: var(--dim); }
@@ -223,7 +227,10 @@ textarea { width: 100%; resize: vertical; min-height: 72px; }
 .twisty-host > * { width: 100% !important; height: 100% !important; }
 @media (max-width: 720px) {
   .cfg { gap: 4px 16px; }
-  .statrow { gap: 12px 28px; }
+  .statrow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px 8px; }
+  .stat b { font-size: 24px; }
+  .stat.count { display: none; }
+  .lastsolve .delta { flex-basis: 100%; text-align: center; margin: 0 0 4px; }
   .keys { display: none; }
   .twisty-host { width: 200px; height: 120px; }
 }
@@ -276,6 +283,14 @@ textarea { width: 100%; resize: vertical; min-height: 72px; }
 .kpi b { display: block; font-size: 26px; font-weight: 500; color: var(--fg); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; line-height: 1.25; }
 .kpi.lead b { color: var(--acc); font-size: 32px; }
 .kpi small { display: block; font-size: 12px; color: var(--faint); }
+.emptystate { max-width: 520px; margin: 48px 0; }
+.emptystate h2 { font-size: 18px; font-weight: 600; margin: 0 0 6px; }
+.emptystate p { color: var(--dim); font-size: 14px; line-height: 1.6; margin: 0; }
+.emptystate .row { display: flex; gap: 8px; margin-top: 20px; flex-wrap: wrap; }
+.emptystate a.btn { text-decoration: none; display: inline-flex; align-items: center; }
+.solves-table.pbtable { width: auto; min-width: 300px; }
+.solves-table.pbtable td { padding-right: 32px; }
+.solves-table.pbtable td:last-child { padding-right: 0; }
 .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 24px; align-items: start; }
 .empty { border: 1px dashed var(--line); border-radius: 8px; padding: 14px 16px; color: var(--dim); font-size: 14px; }
 
@@ -298,7 +313,18 @@ textarea { width: 100%; resize: vertical; min-height: 72px; }
 .solves-table td.t { font-weight: 500; }
 .solves-table td.best { color: var(--acc); }
 .solves-table td.comment { max-width: 260px; overflow: hidden; text-overflow: ellipsis; color: var(--dim); }
-.tag { display: inline-flex; align-items: center; height: 20px; padding: 0 7px; border-radius: 4px; font-size: 12px; background: var(--raised); color: var(--dim); margin-left: 6px; }
+.solves-table tr.dayrow { cursor: default; }
+/* without comments the numbers would spread across the full width */
+.solves-table.compact { width: auto; min-width: min(640px, 100%); }
+.solves-table.compact th.n + th.n, .solves-table.compact td.n + td.n { padding-left: 56px; }
+.solves-table tr.dayrow:hover { background: none; }
+.solves-table tr.dayrow td { height: 36px; padding-top: 14px; font-size: 12px; color: var(--faint); border-top: 0; text-align: left; }
+.drawer-nav { display: flex; gap: 2px; }
+.drawer-nav .flip svg { transform: scaleX(-1); }
+.drawer-nav button:disabled { opacity: 0.35; }
+.wide-only { display: contents; }
+.narrow-only { display: none; }
+@media (max-width: 640px) { .wide-only { display: none; } .narrow-only { display: block; } }
 @media (max-width: 640px) { .solves-table .hide-sm { display: none; } }
 
 /* drawer / dialog */
@@ -321,6 +347,8 @@ textarea { width: 100%; resize: vertical; min-height: 72px; }
 .swatch span { display: block; height: 52px; border-radius: 10px; margin-bottom: 6px; position: relative; overflow: hidden; box-shadow: inset 0 0 0 1px var(--line); }
 .swatch span i { position: absolute; right: 8px; bottom: 8px; width: 14px; height: 14px; border-radius: 50%; }
 .swatch[aria-pressed='true'] { color: var(--fg); }
+/* text colour flips at the same 50% line as the background */
+.swatch .split-sample { display: block; font-style: normal; background: linear-gradient(90deg, #1b1b1b 50%, #ecebe8 50%) 0 0 / 88px 100% no-repeat; background-position: -10px 0; -webkit-background-clip: text; background-clip: text; color: transparent; }
 .swatch[aria-pressed='true'] span { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--fg); }
 @media (max-width: 720px) { .setting { grid-template-columns: 1fr; } }
 

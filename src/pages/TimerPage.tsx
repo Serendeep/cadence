@@ -204,7 +204,16 @@ function FocusView({ data, settings, scramble, scrambleError, onNewScramble, onP
       </div>
 
       <div className="band bottom chrome">
-        {data.solves.length > 0 ? <Results solves={data.solves} stats={data.stats} decimals={dec} /> : <div className="results" />}
+        {data.solves.length > 0 ? (
+          <Results solves={data.solves} stats={data.stats} decimals={dec} />
+        ) : (
+          <div className="results firstrun">
+            New here?{' '}
+            <a href="#/settings?import">Import from csTimer</a>
+            {' · '}
+            <a href="#/settings?devices">Connect a timer or cube</a>
+          </div>
+        )}
         <div className="keys">
           <kbd>space</kbd> start · <kbd>esc</kbd> cancel · any key stops
         </div>

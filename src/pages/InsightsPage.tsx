@@ -82,6 +82,24 @@ export function InsightsPage() {
         </div>
       </div>
 
+      {stats.count === stats.dnf ? (
+        <div className="emptystate">
+          <h2>Nothing to analyse yet</h2>
+          <p>Your progress, time spread, phase splits and personal bests show up here once you have a few finished solves.</p>
+          <div className="row">
+            <a className="btn primary" href="#/timer">Start timing</a>
+            <a className="btn" href="#/settings?import">Import from csTimer</a>
+          </div>
+        </div>
+      ) : (
+        insightsBody()
+      )}
+    </div>
+  )
+
+  function insightsBody() {
+    return (
+      <>
       <div className="kpis">
         <div className="kpi">
           Solves<b className="num">{stats.count.toLocaleString()}</b>
@@ -175,7 +193,7 @@ export function InsightsPage() {
           <h2>Personal bests</h2>
           <p className="sub dim" style={{ margin: '2px 0 14px', fontSize: 14 }}>Each solve that set a new best single, latest first.</p>
           {pbs.length ? (
-            <table className="solves-table">
+            <table className="solves-table pbtable">
               <tbody>
                 {pbs.map((s, i) => {
                   const next = pbs[i + 1]
@@ -183,7 +201,7 @@ export function InsightsPage() {
                     <tr key={s.id} style={{ cursor: 'default' }}>
                       <td className="n t">{formatMs(solveValue(s), dec)}</td>
                       <td className="n dim">{next ? `−${formatMs(solveValue(next) - solveValue(s))}` : 'first'}</td>
-                      <td className="n dim">{new Date(s.date).toLocaleDateString()}</td>
+                      <td className="n dim">{new Date(s.date).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}</td>
                     </tr>
                   )
                 })}
@@ -194,6 +212,7 @@ export function InsightsPage() {
           )}
         </section>
       </div>
-    </div>
-  )
+      </>
+    )
+  }
 }
