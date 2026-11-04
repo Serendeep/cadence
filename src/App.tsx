@@ -40,6 +40,7 @@ export default function App() {
   const [route, setRoute] = useState<Route>(readRoute)
   const [focused, setFocused] = useState(false)
   useTheme(settings.theme)
+  useUpdateNotice()
 
   useEffect(() => {
     const onHash = () => setRoute(readRoute())
@@ -128,8 +129,26 @@ interface DesktopBridge {
   isDesktop: true
   onBluetoothDevices: (cb: (d: { id: string; name: string }[]) => void) => () => void
   selectBluetoothDevice: (id: string) => void
+  onUpdate: (cb: (u: { kind: 'available' | 'ready'; version: string }) => void) => () => void
+  installUpdate: () => void
 }
 const desktop = (window as unknown as { desktop?: DesktopBridge }).desktop
+
+const UPDATE_TOAST_MS = 60 * 60 * 1000
+
+function useUpdateNotice() {
+  useEffect(
+    () =>
+      desktop?.onUpdate((u) =>
+        toast(
+          u.kind === 'ready' ? `Version ${u.version} is ready` : `Version ${u.version} is available`,
+          { label: u.kind === 'ready' ? 'Restart' : 'Download', run: () => desktop.installUpdate() },
+          UPDATE_TOAST_MS,
+        ),
+      ),
+    [],
+  )
+}
 
 /** The desktop app has no browser device chooser, so the app shows its own. */
 function BluetoothPicker() {

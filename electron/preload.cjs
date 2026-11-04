@@ -10,4 +10,12 @@ contextBridge.exposeInMainWorld('desktop', {
   selectBluetoothDevice(id) {
     ipcRenderer.send('bluetooth-select', id)
   },
+  onUpdate(cb) {
+    const listener = (_e, msg) => cb(msg)
+    ipcRenderer.on('update', listener)
+    return () => ipcRenderer.off('update', listener)
+  },
+  installUpdate() {
+    ipcRenderer.send('update-install')
+  },
 })

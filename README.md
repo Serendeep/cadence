@@ -12,15 +12,33 @@ A speedcubing timer for the desktop and the browser. It keeps out of the way whi
 - **Insights:** WCA averages (ao5 to ao1000), progress with rolling averages, the spread of your times, day-by-day trends, phase breakdowns, practice habits and a PB timeline.
 - **Your data stays local** in IndexedDB. It imports csTimer exports and exports to its own backup format or back to csTimer.
 
-## Desktop app
+## Install
+
+Download the file for your system from [Releases](https://github.com/Serendeep/better-cstimer/releases/latest). The builds are not code-signed yet, so each system asks once before the first launch.
+
+- **macOS:** open the `.dmg` (`arm64` for Apple silicon, the other one for Intel) and drag the app to Applications. On first launch macOS refuses to open it; go to System Settings > Privacy & Security and click Open Anyway. If macOS says the app is damaged, run `xattr -cr /Applications/better-cstimer.app` in Terminal.
+- **Windows:** run the `.exe` installer. When SmartScreen shows "Windows protected your PC", click More info, then Run anyway.
+- **Linux:** the `.AppImage` runs anywhere after `chmod +x better-cstimer-*.AppImage`. There are also `.deb` and `.pacman` packages (`sudo apt install ./better-cstimer_*.deb`, `sudo pacman -U better-cstimer-*.pacman`).
+
+The app checks for a new version at launch and every six hours. On Windows and with the AppImage it downloads the update and offers a restart. On macOS and with the `.deb` or `.pacman` packages it links you to the download instead, because unsigned Mac apps can't replace themselves and the package manager owns those installs.
+
+## Building and releasing
 
 ```bash
 npm install
-npm run dist:linux     # release/better-cstimer-<version>.AppImage and .pacman
-sudo pacman -U release/better-cstimer-*.pacman
+npm run dist:linux     # release/: AppImage, .deb and .pacman
 ```
 
 `dist:win` and `dist:mac` build the other platforms. The desktop app bundles its own Chromium, so Bluetooth works on Linux without a browser flag.
+
+To release, bump the version and push the tag:
+
+```bash
+npm version minor      # or patch; commits and tags vX.Y.Z
+git push --follow-tags
+```
+
+The release workflow builds macOS, Windows and Linux on GitHub Actions and uploads everything to a draft release. Publishing the draft is what makes installed apps see the update.
 
 ## Development
 
