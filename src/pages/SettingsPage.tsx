@@ -7,6 +7,7 @@ import { bluetoothAvailable } from '../lib/devices'
 import { makeBackup, parseImport, toCstimer } from '../lib/importExport'
 import { setSettings, useSettings, type ThemeName } from '../lib/settings'
 import { toast } from '../lib/toast'
+import { installApp, useCanInstall } from '../lib/pwa'
 import { playCall, VOICES } from '../lib/voice'
 import { Dialog } from './SolvesPage'
 
@@ -57,6 +58,7 @@ export function SettingsPage() {
   const [busy, setBusy] = useState(false)
   const [confirmClear, setConfirmClear] = useState(false)
   const bt = bluetoothAvailable()
+  const canInstall = useCanInstall()
 
   const onImport = async (f: File) => {
     setBusy(true)
@@ -74,7 +76,7 @@ export function SettingsPage() {
 
   const exportAll = async (format: 'backup' | 'cstimer') => {
     const [sessions, solves] = await Promise.all([db.sessions.orderBy('order').toArray(), db.solves.orderBy('date').toArray()])
-    if (format === 'backup') download(`better-cstimer-${stamp()}.json`, makeBackup(sessions, solves))
+    if (format === 'backup') download(`cadence-backup-${stamp()}.json`, makeBackup(sessions, solves))
     else download(`cstimer-export-${stamp()}.txt`, toCstimer(sessions, solves))
   }
 
@@ -92,6 +94,12 @@ export function SettingsPage() {
           <p>Saved on this device as you change them.</p>
         </div>
       </div>
+
+      {canInstall && (
+        <Row title="Install the app" desc="Adds Cadence to your home screen or app list. It opens in its own window and works offline.">
+          <button type="button" className="btn primary" onClick={() => void installApp()}>Install</button>
+        </Row>
+      )}
 
       <Row title="Theme" desc="System follows your OS: paper in light mode, graphite in dark.">
         <button type="button" className="swatch" aria-pressed={s.theme === 'system'} onClick={() => setSettings({ theme: 'system' })}>
@@ -202,7 +210,7 @@ export function SettingsPage() {
         )}
       </Row>
 
-      <Row id="import" title="Import from csTimer" desc="In csTimer open Export, choose Export to file, then pick that file here. A better-cstimer backup works too. Imported sessions are added next to yours.">
+      <Row id="import" title="Import from csTimer" desc="In csTimer open Export, choose Export to file, then pick that file here. A Cadence backup works too. Imported sessions are added next to yours.">
         <ScrollHere when={location.hash.endsWith('?import')} />
         <input ref={file} type="file" accept=".json,.txt,application/json,text/plain" className="visually-hidden" id="import-file" onChange={(e) => e.target.files?.[0] && void onImport(e.target.files[0])} />
         <button type="button" className="btn primary" disabled={busy} onClick={() => file.current?.click()}>

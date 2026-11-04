@@ -20,7 +20,7 @@ export const PlayIcon = () => <svg {...base}><path d="M7 5v14l11-7z" /></svg>
 export function Mark({ size = 26 }: { size?: number }) {
   const c = ['#f5f5f5', '#d8343a', '#2fa84f', '#f08a24', '#f5f5f5', '#2f6fd6', '#f4d23a', '#2fa84f', '#d8343a']
   return (
-    <svg width={size} height={size} viewBox="0 0 26 26" aria-label="better-cstimer" role="img">
+    <svg width={size} height={size} viewBox="0 0 26 26" aria-label="Cadence" role="img">
       {c.map((fill, i) => (
         <rect key={i} x={(i % 3) * 9} y={Math.floor(i / 3) * 9} width="8" height="8" rx="1.6" fill={fill} />
       ))}

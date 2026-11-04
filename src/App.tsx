@@ -1,6 +1,6 @@
 import { AnimatePresence, motion, MotionConfig } from 'motion/react'
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
-import { ChartIcon, ListIcon, Mark, SettingsIcon, TimerIcon } from './components/icons'
+import { ChartIcon, CloseIcon, ListIcon, Mark, SettingsIcon, TimerIcon } from './components/icons'
 import { answerMac, clearDeviceError, useDevices } from './lib/deviceStore'
 import { useSettings, type ThemeName } from './lib/settings'
 import { dismissToast, toast, useToast } from './lib/toast'
@@ -102,26 +102,27 @@ export default function App() {
 function ToastHost() {
   const t = useToast()
   return (
-    <AnimatePresence>
-      {t && (
-        <motion.div
-          key={t.id}
-          className="toast"
-          role="status"
-          initial={{ opacity: 0, y: 16, x: '-50%' }}
-          animate={{ opacity: 1, y: 0, x: '-50%' }}
-          exit={{ opacity: 0, y: 10, x: '-50%' }}
-          transition={{ type: 'spring', stiffness: 420, damping: 32 }}
-        >
-          <span>{t.message}</span>
-          {t.action ? (
-            <button type="button" onClick={() => { t.action!.run(); dismissToast() }}>{t.action.label}</button>
-          ) : (
-            <button type="button" onClick={dismissToast}>OK</button>
-          )}
-        </motion.div>
-      )}
-    </AnimatePresence>
+    <div className="toast-wrap">
+      <AnimatePresence>
+        {t && (
+          <motion.div
+            key={t.id}
+            className="toast"
+            role="status"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            transition={{ type: 'spring', stiffness: 420, damping: 32 }}
+          >
+            <span className="msg">{t.message}</span>
+            {t.action && (
+              <button type="button" className="act" onClick={() => { t.action!.run(); dismissToast() }}>{t.action.label}</button>
+            )}
+            <button type="button" className="x" aria-label="Dismiss" onClick={dismissToast}><CloseIcon /></button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   )
 }
 

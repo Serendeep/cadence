@@ -1,0 +1,11 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "cadence",
+  "compatibility_date": "2026-11-01",
+  "account_id": "c4d5693f1d3596af74f7ac66b42face0",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
+  },
+  "routes": [{ "pattern": "timer.serendeep.app", "custom_domain": true }]
+}

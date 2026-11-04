@@ -1,5 +1,5 @@
 {
-  "name": "better-cstimer",
+  "name": "cadence",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -12,7 +12,8 @@
     "lint": "oxlint",
     "dist:linux": "npm run build && electron-builder --linux --publish never",
     "dist:win": "npm run build && electron-builder --win --publish never",
-    "dist:mac": "npm run build && electron-builder --mac --publish never"
+    "dist:mac": "npm run build && electron-builder --mac --publish never",
+    "deploy": "npm run build && wrangler deploy"
   },
   "dependencies": {
     "@fontsource-variable/jetbrains-mono": "^5.3.0",
@@ -39,7 +40,9 @@
     "oxlint": "^1.89.0",
     "typescript": "~7.0.2",
     "vite": "^8.3.5",
-    "vitest": "^4.1.12"
+    "vite-plugin-pwa": "^2.0.0",
+    "vitest": "^4.1.12",
+    "wrangler": "^4.157.0"
   },
   "description": "A faster, cleaner speedcubing timer with deep analysis, smart cube and Stackmat support.",
   "license": "GPL-3.0-or-later",
@@ -49,8 +52,8 @@
     "email": "serendeep4@gmail.com"
   },
   "build": {
-    "appId": "dev.serendeep.better-cstimer",
-    "productName": "better-cstimer",
+    "appId": "dev.serendeep.cadence",
+    "productName": "Cadence",
     "files": [
       "dist/**",
       "electron/main.cjs",
@@ -64,7 +67,7 @@
     "linux": {
       "category": "Utility",
       "icon": "build/icon.png",
-      "executableName": "better-cstimer",
+      "executableName": "cadence",
       "maintainer": "Serendeep <serendeep4@gmail.com>",
       "target": [
         "AppImage",
@@ -113,7 +116,7 @@
       {
         "provider": "github",
         "owner": "Serendeep",
-        "repo": "better-cstimer",
+        "repo": "cadence",
         "releaseType": "draft"
       }
     ],

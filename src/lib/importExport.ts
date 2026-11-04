@@ -83,6 +83,7 @@ export function parseCstimer(json: unknown): ImportedData {
   return out
 }
 
+// the original name, kept so older backups still import
 export const BACKUP_APP = 'better-cstimer'
 
 export interface Backup {
@@ -100,7 +101,7 @@ export function makeBackup(sessions: Session[], solves: Solve[]): Backup {
 /** Parses our own backup file, validating each solve. */
 export function parseBackup(json: unknown): ImportedData {
   if (!isObj(json) || json.app !== BACKUP_APP || !Array.isArray(json.sessions) || !Array.isArray(json.solves))
-    throw new Error('This file is not a better-cstimer backup.')
+    throw new Error('This file is not a Cadence backup.')
   const index = new Map<number, number>()
   const out: ImportedData = { sessions: [], solves: [], skipped: 0 }
   for (const s of json.sessions) {

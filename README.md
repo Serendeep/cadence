@@ -1,8 +1,8 @@
 <img src="build/icon.svg" width="64" height="64" alt="">
 
-# better-cstimer
+# Cadence
 
-A speedcubing timer for the desktop and the browser. It keeps out of the way while you solve and tells you what changed afterwards.
+A speedcubing timer for the desktop, the browser and your phone. It keeps out of the way while you solve and tells you what changed afterwards.
 
 - **Focus timer.** Everything but the time fades out while you solve. Hold space (or touch) until the time turns green, release to start, press any key to stop. WCA inspection with spoken 8 s and 12 s calls, and +2 or DNF applied automatically.
 - **Phases.** Tap space at the end of each phase for cross, F2L, OLL and PLL splits, or let a smart cube detect them.
@@ -14,11 +14,13 @@ A speedcubing timer for the desktop and the browser. It keeps out of the way whi
 
 ## Install
 
-Download the file for your system from [Releases](https://github.com/Serendeep/better-cstimer/releases/latest). The builds are not code-signed yet, so each system asks once before the first launch.
+**On a phone or any browser,** open [timer.serendeep.app](https://timer.serendeep.app). In Chrome or Edge, tap Install when the app offers it, or use Settings > Install the app. On an iPhone, tap Share, then Add to Home Screen. The installed app works offline and updates itself; a Reload button appears when a new version is ready.
 
-- **macOS:** open the `.dmg` (`arm64` for Apple silicon, the other one for Intel) and drag the app to Applications. On first launch macOS refuses to open it; go to System Settings > Privacy & Security and click Open Anyway. If macOS says the app is damaged, run `xattr -cr /Applications/better-cstimer.app` in Terminal.
+**On a computer,** download the file for your system from [Releases](https://github.com/Serendeep/cadence/releases/latest). The builds are not code-signed yet, so each system asks once before the first launch.
+
+- **macOS:** open the `.dmg` (`arm64` for Apple silicon, the other one for Intel) and drag the app to Applications. On first launch macOS refuses to open it; go to System Settings > Privacy & Security and click Open Anyway. If macOS says the app is damaged, run `xattr -cr /Applications/Cadence.app` in Terminal.
 - **Windows:** run the `.exe` installer. When SmartScreen shows "Windows protected your PC", click More info, then Run anyway.
-- **Linux:** the `.AppImage` runs anywhere after `chmod +x better-cstimer-*.AppImage`. There are also `.deb` and `.pacman` packages (`sudo apt install ./better-cstimer_*.deb`, `sudo pacman -U better-cstimer-*.pacman`).
+- **Linux:** the `.AppImage` runs anywhere after `chmod +x Cadence-*.AppImage`. There are also `.deb` and `.pacman` packages (`sudo apt install ./cadence_*.deb`, `sudo pacman -U cadence-*.pacman`).
 
 The app checks for a new version at launch and every six hours. On Windows and with the AppImage it downloads the update and offers a restart. On macOS and with the `.deb` or `.pacman` packages it links you to the download instead, because unsigned Mac apps can't replace themselves and the package manager owns those installs.
 

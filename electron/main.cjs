@@ -7,6 +7,10 @@ const { updateMode } = require('./updateMode.cjs')
 const DIST = path.join(__dirname, '..', 'dist')
 const DEV_URL = process.env.VITE_DEV_SERVER_URL
 
+// the app was called better-cstimer first; keep reading the solves stored under that folder
+const legacyData = path.join(app.getPath('appData'), 'better-cstimer')
+if (fs.existsSync(legacyData)) app.setPath('userData', legacyData)
+
 // Web Bluetooth (and watchAdvertisements for MoYu MAC discovery) sit behind this switch on Linux.
 app.commandLine.appendSwitch('enable-experimental-web-platform-features')
 
@@ -36,7 +40,7 @@ function createWindow() {
     minHeight: 560,
     backgroundColor: '#141416',
     autoHideMenuBar: true,
-    title: 'better-cstimer',
+    title: 'Cadence',
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
@@ -71,7 +75,7 @@ function createWindow() {
   void win.loadURL(DEV_URL ?? 'app://bundle/')
 }
 
-const RELEASES_URL = 'https://github.com/Serendeep/better-cstimer/releases/latest'
+const RELEASES_URL = 'https://github.com/Serendeep/cadence/releases/latest'
 const UPDATE_CHECK_MS = 6 * 60 * 60 * 1000
 
 function startUpdates() {
