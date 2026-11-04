@@ -10,8 +10,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "lint": "oxlint",
-    "dist:linux": "npm run build && electron-builder --linux AppImage pacman",
-    "dist:win": "npm run build && electron-builder --win nsis",
+    "dist:linux": "npm run build && electron-builder --linux --publish never",
+    "dist:win": "npm run build && electron-builder --win --publish never",
     "dist:mac": "npm run build && electron-builder --mac --publish never"
   },
   "dependencies": {
@@ -21,6 +21,7 @@
     "cubing": "^0.66.1",
     "dexie": "^4.4.7",
     "dexie-react-hooks": "^4.4.0",
+    "electron-updater": "^6.8.11",
     "gan-web-bluetooth": "^3.0.2",
     "motion": "^14.9.0",
     "react": "^19.3.1",
@@ -54,6 +55,7 @@
       "dist/**",
       "electron/main.cjs",
       "electron/preload.cjs",
+      "electron/updateMode.cjs",
       "package.json"
     ],
     "directories": {
@@ -63,7 +65,12 @@
       "category": "Utility",
       "icon": "build/icon.png",
       "executableName": "better-cstimer",
-      "maintainer": "Serendeep <serendeep4@gmail.com>"
+      "maintainer": "Serendeep <serendeep4@gmail.com>",
+      "target": [
+        "AppImage",
+        "deb",
+        "pacman"
+      ]
     },
     "pacman": {
       "depends": [
@@ -88,12 +95,44 @@
             "arm64",
             "x64"
           ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
         }
       ],
       "extendInfo": {
         "NSBluetoothAlwaysUsageDescription": "Connects to Bluetooth smart cubes and the GAN Smart Timer.",
         "NSMicrophoneUsageDescription": "Reads a Stackmat timer plugged into the audio input."
       }
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "Serendeep",
+        "repo": "better-cstimer",
+        "releaseType": "draft"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png",
+      "verifyUpdateCodeSignature": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true
     }
   }
 }

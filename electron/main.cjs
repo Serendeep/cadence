@@ -2,6 +2,7 @@ const { app, BrowserWindow, ipcMain, net, protocol, shell } = require('electron'
 const fs = require('node:fs')
 const path = require('node:path')
 const { pathToFileURL } = require('node:url')
+const { updateMode } = require('./updateMode.cjs')
 
 const DIST = path.join(__dirname, '..', 'dist')
 const DEV_URL = process.env.VITE_DEV_SERVER_URL
@@ -70,9 +71,34 @@ function createWindow() {
   void win.loadURL(DEV_URL ?? 'app://bundle/')
 }
 
+const RELEASES_URL = 'https://github.com/Serendeep/better-cstimer/releases/latest'
+const UPDATE_CHECK_MS = 6 * 60 * 60 * 1000
+
+function startUpdates() {
+  const { autoUpdater } = require('electron-updater')
+  const mode = updateMode(process.platform, process.env.APPIMAGE)
+  autoUpdater.logger = null
+  autoUpdater.autoDownload = mode === 'install'
+  const tell = (msg) => BrowserWindow.getAllWindows().forEach((w) => w.webContents.send('update', msg))
+  autoUpdater.on('update-available', (info) => {
+    if (mode === 'notify') tell({ kind: 'available', version: info.version })
+  })
+  autoUpdater.on('update-downloaded', (info) => tell({ kind: 'ready', version: info.version }))
+  // offline or GitHub unreachable: try again on the next check, never bother the user
+  autoUpdater.on('error', (e) => console.error('Update check failed:', e?.message ?? e))
+  ipcMain.on('update-install', () => {
+    if (mode === 'install') autoUpdater.quitAndInstall()
+    else void shell.openExternal(RELEASES_URL)
+  })
+  const check = () => autoUpdater.checkForUpdates().catch(() => {})
+  check()
+  setInterval(check, UPDATE_CHECK_MS)
+}
+
 app.whenReady().then(() => {
   if (!DEV_URL) serveDist()
   createWindow()
+  if (app.isPackaged) startUpdates()
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
