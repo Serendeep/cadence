@@ -61,13 +61,24 @@ export function simplify(moves: readonly string[]): string[] {
 }
 
 /** What the user should do next while scrambling: the fix for a wrong turn, or the remaining scramble. */
-export function scrambleHint(t: Tracker): { undo: string; remaining: string[] } {
+export interface ScrambleHint {
+  /** Moves that undo a wrong turn; empty when on track */
+  undo: string
+  /** Scramble moves still to do, the first possibly the second half of a double turn */
+  remaining: string[]
+  /** How many scramble moves are done */
+  done: number
+  /** The current move is a double turn with its first quarter already made */
+  half: boolean
+}
+
+export function scrambleHint(t: Tracker): ScrambleHint {
   const dev = simplify(t.deviation)
   const next = t.scramble[t.progress]
   // half of a double turn is progress, not a mistake
   if (dev.length === 1 && next?.endsWith('2') && dev[0][0] === next[0] && !dev[0].endsWith('2'))
-    return { undo: '', remaining: [dev[0], ...t.scramble.slice(t.progress + 1)] }
-  return { undo: dev.length ? invertAlg(dev.join(' ')) : '', remaining: t.scramble.slice(t.progress) }
+    return { undo: '', remaining: [dev[0], ...t.scramble.slice(t.progress + 1)], done: t.progress, half: true }
+  return { undo: dev.length ? invertAlg(dev.join(' ')) : '', remaining: t.scramble.slice(t.progress), done: t.progress, half: false }
 }
 
 export function trackMove(t: Tracker, move: string, at: number): { tracker: Tracker; finished?: SmartFinish } {

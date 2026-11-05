@@ -245,20 +245,22 @@ export function LabView({ data, settings, scramble, scrambleError, onNewScramble
         {tracker?.phase === 'scrambling' && hint && (
           <div className="guide">
             {hint.undo ? (
-              <>
-                <span className="undo">Wrong turn. Undo with</span>
-                <div className="moves">{hint.undo}</div>
-              </>
+              <span className="undo">
+                Wrong turn. Undo with <b className="mono">{hint.undo}</b>
+              </span>
             ) : (
-              <>
-                Scramble your cube
-                <div className="moves">
-                  {hint.remaining.map((m, i) => (
-                    <span key={`${i}${m}`}>{m} </span>
-                  ))}
-                </div>
-              </>
+              <span>
+                Scramble your cube · {hint.done} of {tracker.scramble.length}
+              </span>
             )}
+            {/* the whole scramble stays put: done moves fade, the next one is marked, so nothing jumps while you turn */}
+            <div className={`moves ${hint.undo ? 'paused' : ''}`} aria-label={`Next move ${tracker.scramble[hint.done] ?? ''}`}>
+              {tracker.scramble.map((m, i) => (
+                <span key={i} className={i < hint.done ? 'done' : i === hint.done ? (hint.half ? 'cur half' : 'cur') : undefined}>
+                  {m}
+                </span>
+              ))}
+            </div>
           </div>
         )}
       </div>

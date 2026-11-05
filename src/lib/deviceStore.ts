@@ -47,7 +47,7 @@ function set(patch: Partial<DeviceState>) {
 }
 
 // dev only: lets layout checks fake a connected device; stripped from production builds
-if (import.meta.env.DEV) Object.assign(window, { __devices: { set, orient: (q: Quat) => onOrientation(q, q) } })
+if (import.meta.env.DEV) Object.assign(window, { __devices: { set, orient: (q: Quat) => onOrientation(q, q), move: (m: string) => moveListeners.forEach((l) => l(m, performance.now())) } })
 
 export const useDevices = () =>
   useSyncExternalStore((l) => (listeners.add(l), () => listeners.delete(l)), () => state)

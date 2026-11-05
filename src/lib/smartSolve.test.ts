@@ -25,7 +25,7 @@ describe('smart cube tracker', () => {
 
   it('counts half of a double turn as progress', () => {
     const { t } = feed(newTracker(scr), 'R U F')
-    expect(scrambleHint(t)).toEqual({ undo: '', remaining: ['F', "L'", 'D'] })
+    expect(scrambleHint(t)).toMatchObject({ undo: '', remaining: ['F', "L'", 'D'] })
   })
 
   it('suggests an undo after a wrong turn', () => {

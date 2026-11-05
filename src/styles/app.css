@@ -268,9 +268,16 @@ textarea { width: 100%; resize: vertical; min-height: 72px; }
 .lab .ph b { color: var(--fg); font: 500 13px var(--mono); text-align: right; }
 .lab .ph.cur { color: var(--fg); }
 .lab .guide { font-size: 15px; color: var(--dim); margin-top: 18px; min-height: 48px; }
-.lab .guide .moves { font: 500 20px/1.5 var(--mono); color: var(--fg); word-spacing: 0.25em; }
-.lab .guide .moves span:first-child { color: var(--acc); }
+.lab .guide .moves { font: 500 20px/1.5 var(--mono); color: var(--fg); display: flex; flex-wrap: wrap; gap: 0 0.6em; margin-top: 4px; }
+.lab .guide .moves span { transition: color 0.25s, opacity 0.25s; text-decoration: underline 2px transparent; text-underline-offset: 6px; }
+.lab .guide .moves .done { color: var(--faint); }
+.lab .guide .moves .cur { color: var(--acc); text-decoration-color: currentColor; }
+/* first quarter of a double turn made: the mark goes dotted until the second quarter */
+.lab .guide .moves .cur.half { text-decoration-style: dotted; }
+.lab .guide .moves.paused .cur { color: var(--fg); text-decoration-color: transparent; }
 .lab .guide .undo { color: var(--bad); }
+.lab .guide .undo b { font-size: 18px; margin-left: 4px; }
+@media (prefers-reduced-motion: reduce) { .lab .guide .moves span { transition: none; } }
 .ticker { grid-column: 1 / -1; height: 46px; background: var(--surface); border-radius: var(--r); display: flex; align-items: center; gap: 16px; padding: 0 18px; overflow: hidden; font: 500 16px var(--mono); color: var(--dim); white-space: nowrap; }
 .ticker .stream { display: flex; gap: 12px; justify-content: flex-end; flex: 1; overflow: hidden; mask-image: linear-gradient(to right, transparent, #000 15%); }
 .ticker .stream span:last-child { color: var(--fg); }
