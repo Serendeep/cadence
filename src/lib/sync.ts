@@ -50,14 +50,27 @@ export interface SyncState {
   settingsUpdated: number
   lastSynced: number | null
   status: 'idle' | 'syncing' | 'error'
+  /** Set while asking whether this device's solves, from another account, may go into the account being signed into */
+  switching: { from: string; to: string } | null
 }
 
-const SIGNED_OUT: SyncState = { token: null, account: null, version: 0, pushedAt: -1, settingsUpdated: 0, lastSynced: null, status: 'idle' }
+const SIGNED_OUT: SyncState = { token: null, account: null, version: 0, pushedAt: -1, settingsUpdated: 0, lastSynced: null, status: 'idle', switching: null }
+// the last account this device synced with, kept after signing out, so a different account can be noticed
+const LAST_ACCOUNT = 'cadence:last-account'
+
+function lastAccount(): { id: number; name: string } | null {
+  try {
+    const raw: unknown = JSON.parse(localStorage.getItem(LAST_ACCOUNT) ?? 'null')
+    return isObj(raw) && finite(raw.id) && typeof raw.name === 'string' ? { id: raw.id, name: raw.name } : null
+  } catch {
+    return null
+  }
+}
 
 function load(): SyncState {
   try {
     const raw: unknown = JSON.parse(localStorage.getItem(STORE) ?? 'null')
-    return isObj(raw) ? { ...SIGNED_OUT, ...(raw as Partial<SyncState>), status: 'idle' } : SIGNED_OUT
+    return isObj(raw) ? { ...SIGNED_OUT, ...(raw as Partial<SyncState>), status: 'idle', switching: null } : SIGNED_OUT
   } catch {
     return SIGNED_OUT
   }
@@ -89,8 +102,8 @@ export function useSync(): SyncState {
 class SignedOut extends Error {}
 class StorageFull extends Error {}
 
-async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const res = await fetch(API + path, { ...init, headers: { ...init.headers, Authorization: `Bearer ${state.token}`, 'Content-Type': 'application/json' } })
+async function api<T>(path: string, init: RequestInit = {}, token = state.token): Promise<T> {
+  const res = await fetch(API + path, { ...init, headers: { ...init.headers, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } })
   if (res.status === 401) throw new SignedOut()
   if (res.status === 507) throw new StorageFull()
   if (!res.ok) throw new Error(`Sync failed (${res.status})`)
@@ -245,15 +258,39 @@ function schedule(delay = DEBOUNCE_MS): void {
   timer = window.setTimeout(() => void syncNow(), delay)
 }
 
+let answerSwitch: ((merge: boolean) => void) | null = null
+
+/** The Settings dialog's answer to `switching`: true uploads this device's solves into the new account. */
+export function resolveAccountSwitch(merge: boolean): void {
+  answerSwitch?.(merge)
+  answerSwitch = null
+}
+
 async function finishSignIn(token: string): Promise<void> {
-  update({ ...SIGNED_OUT, token, settingsUpdated: state.settingsUpdated })
   try {
-    const me = await api<Account>('/api/me')
-    update({ account: { name: me.name, wcaId: me.wcaId, avatar: me.avatar } })
+    // the token is only kept once the account is settled, so nothing syncs while the question is open
+    const me = await api<Account & { id: number }>('/api/me', {}, token)
+    const previous = lastAccount()
+    if (previous && previous.id !== me.id && (await db.solves.count()) > 0) {
+      update({ switching: { from: previous.name, to: me.name } })
+      const merge = await new Promise<boolean>((resolve) => (answerSwitch = resolve))
+      update({ switching: null })
+      if (!merge) {
+        await api('/api/auth/logout', { method: 'POST' }, token).catch(() => undefined)
+        toast(`Not signed in. Nothing from this device went to ${me.name}'s account.`, undefined, 8000)
+        return
+      }
+    }
+    try {
+      localStorage.setItem(LAST_ACCOUNT, JSON.stringify({ id: me.id, name: me.name }))
+    } catch {
+      // storage blocked: the next sign-in simply cannot compare accounts
+    }
+    update({ ...SIGNED_OUT, token, settingsUpdated: state.settingsUpdated, account: { name: me.name, wcaId: me.wcaId, avatar: me.avatar } })
     toast(`Signed in as ${me.name}. Syncing your solves.`)
     await syncNow()
   } catch {
-    update({ status: 'error' })
+    toast(SIGN_IN_ERRORS.failed)
   }
 }
 

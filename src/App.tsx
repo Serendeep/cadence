@@ -10,6 +10,7 @@ import { SettingsPage } from './pages/SettingsPage'
 import { Dialog, SolvesPage } from './pages/SolvesPage'
 import { TimerPage } from './pages/TimerPage'
 import { setSolving } from './lib/solving'
+import { useSync } from './lib/sync'
 
 type Route = 'timer' | 'solves' | 'insights' | 'settings'
 const ROUTES: { id: Route; label: string; icon: ReactNode }[] = [
@@ -39,6 +40,7 @@ function useTheme(theme: ThemeName) {
 export default function App() {
   const settings = useSettings()
   const devices = useDevices()
+  const sync = useSync()
   const [route, setRoute] = useState<Route>(readRoute)
   const [focused, setFocused] = useState(false)
   useTheme(settings.theme)
@@ -73,6 +75,7 @@ export default function App() {
               {r.icon}
               <span className="label">{r.label}</span>
               {r.id === 'timer' && (devices.cube || devices.external) && <span className="dot" aria-label="device connected" />}
+              {r.id === 'settings' && sync.status === 'error' && <span className="dot warn" aria-label="sync is failing" />}
             </button>
           ))}
           <div className="spacer" />

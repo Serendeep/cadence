@@ -47,6 +47,8 @@ export function LabView({ data, settings, scramble, scrambleError, onNewScramble
   const detector = useRef(createRotationDetector())
   const rotationsRef = useRef<TimedMove[]>([])
   const [rotations, setRotations] = useState<TimedMove[]>([])
+  // only cubes with a gyroscope send orientation; without one, rotation controls would only ever show a dash
+  const [hasGyro, setHasGyro] = useState(false)
   const inspRef = useRef(inspStart)
   const caller = useRef(inspectionCaller())
   const voiceRef = useRef(settings.inspectionVoice)
@@ -117,6 +119,7 @@ export function LabView({ data, settings, scramble, scrambleError, onNewScramble
   useEffect(() => {
     if (!settings.trackRotations) return
     return onCubeOrientation((q) => {
+      setHasGyro(true)
       twisty.current?.setOrientation(q)
       const t = trackerRef.current
       if (t?.phase !== 'solving') return
@@ -187,7 +190,7 @@ export function LabView({ data, settings, scramble, scrambleError, onNewScramble
         <button type="button" className="btn ghost" onClick={markSolved}>
           Cube is solved
         </button>
-        {settings.trackRotations && (
+        {settings.trackRotations && hasGyro && (
           <button type="button" className="btn ghost" onClick={resetCubeOrientation} title="Hold the cube white side up, green side facing you, then press">
             Reset orientation
           </button>
@@ -220,7 +223,7 @@ export function LabView({ data, settings, scramble, scrambleError, onNewScramble
         <div className="live-stats">
           <div>tps<b>{tps ? tps.toFixed(2) : '—'}</b></div>
           <div>moves<b>{solving ? moves.length : last?.moves?.length ?? '—'}</b></div>
-          {settings.trackRotations && <div>rotations<b>{shownRotations ?? '—'}</b></div>}
+          {settings.trackRotations && (hasGyro || shownRotations != null) && <div>rotations<b>{shownRotations ?? '—'}</b></div>}
           <div>ao5<b>{formatMs(data.stats.current[5])}</b></div>
         </div>
 
@@ -284,7 +287,7 @@ export function LabView({ data, settings, scramble, scrambleError, onNewScramble
 
       {!solving && data.solves.length > 0 && (
         <div style={{ gridColumn: '1 / -1' }}>
-          <ScrambleLine scramble={scramble} scrambleError={scrambleError} onNewScramble={onNewScramble} onPrevious={onPrevious} />
+          <ScrambleLine scramble={scramble} scrambleError={scrambleError} onNewScramble={onNewScramble} onPrevious={onPrevious} showText={tracker?.phase !== 'scrambling'} />
           <Results solves={data.solves} stats={data.stats} decimals={settings.decimals} />
         </div>
       )}

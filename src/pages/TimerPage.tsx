@@ -111,11 +111,16 @@ export interface ViewProps {
   save: (r: SaveInput) => void
 }
 
-export function ScrambleLine({ scramble, scrambleError, onNewScramble, onPrevious }: Pick<ViewProps, 'scramble' | 'scrambleError' | 'onNewScramble' | 'onPrevious'>) {
+type ScrambleLineProps = Pick<ViewProps, 'scramble' | 'scrambleError' | 'onNewScramble' | 'onPrevious'> & {
+  /** False while another part of the screen already shows the scramble; the buttons stay */
+  showText?: boolean
+}
+
+export function ScrambleLine({ scramble, scrambleError, onNewScramble, onPrevious, showText = true }: ScrambleLineProps) {
   const long = (scramble?.length ?? 0) > 120
   return (
     <div className={`scramble chrome ${long ? 'long' : ''}`} aria-live="polite">
-      {scramble ?? (scrambleError ? 'Could not generate a scramble.' : 'Generating scramble…')}
+      {showText && (scramble ?? (scrambleError ? 'Could not generate a scramble.' : 'Generating scramble…'))}
       <div className="tools">
         <button type="button" className="btn ghost iconbtn" aria-label="Previous scramble" onClick={onPrevious}>
           <BackIcon />
