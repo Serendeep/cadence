@@ -6,12 +6,16 @@ import { toast } from './toast'
 import type { Session, Solve } from './types'
 
 // pages served by the Worker share its origin; the desktop app (app://) and the Vite dev server call production
-const API = location.protocol === 'app:' || import.meta.env.DEV ? 'https://timer.serendeep.app' : ''
+const API = globalThis.location?.protocol === 'app:' || import.meta.env.DEV ? 'https://timer.serendeep.app' : ''
 const STORE = 'cadence:sync'
 // set just before leaving for the WCA site; the sign-in that comes back must carry the same value
 const PENDING_SIGN_IN = 'cadence:sign-in'
 const SIGN_IN_TTL_MS = 15 * 60 * 1000
-const CHUNK = 200
+// the server's per-request maximum; fewer requests keeps a first sync of a big history under the rate limit
+const CHUNK = 500
+// the server allows 120 requests a minute; a big first sync waits this long and retries rather than starting over later
+const RATE_LIMIT_WAIT_MS = 15_000
+const RATE_LIMIT_RETRIES = 12
 const DEBOUNCE_MS = 2000
 const PERIODIC_MS = 5 * 60 * 1000
 // re-send edits from just before the last push, in case one was being written while that push read the database
@@ -20,7 +24,7 @@ const PUSH_OVERLAP_MS = 1000
 const LOCAL_ONLY: readonly (keyof Settings)[] = ['input', 'sessionId', 'shareDiagnostics']
 
 type Kind = 'session' | 'solve' | 'settings'
-interface SyncRecord {
+export interface SyncRecord {
   kind: Kind
   uid: string
   updated: number
@@ -101,11 +105,13 @@ export function useSync(): SyncState {
 
 class SignedOut extends Error {}
 class StorageFull extends Error {}
+class RateLimited extends Error {}
 
 async function api<T>(path: string, init: RequestInit = {}, token = state.token): Promise<T> {
   const res = await fetch(API + path, { ...init, headers: { ...init.headers, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } })
   if (res.status === 401) throw new SignedOut()
   if (res.status === 507) throw new StorageFull()
+  if (res.status === 429) throw new RateLimited()
   if (!res.ok) throw new Error(`Sync failed (${res.status})`)
   return (await res.json()) as T
 }
@@ -198,8 +204,34 @@ async function applyRemote(changes: SyncRecord[]): Promise<void> {
   }
 }
 
+async function postSync(batch: SyncRecord[]): Promise<SyncResponse> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await api<SyncResponse>('/api/sync', { method: 'POST', body: JSON.stringify({ since: state.version, changes: batch }) })
+    } catch (e) {
+      if (!(e instanceof RateLimited) || attempt >= RATE_LIMIT_RETRIES) throw e
+      await new Promise((r) => setTimeout(r, RATE_LIMIT_WAIT_MS))
+    }
+  }
+}
+
 let running: Promise<void> | null = null
 let again = false
+
+// half the server's 8 MB body limit, so long smart cube move logs never make a batch fail on every attempt
+const BATCH_BYTES = 4 * 1024 * 1024
+
+/** How many of the next records fit in one request: at most CHUNK, and under BATCH_BYTES (always at least one). */
+export function batchSize(records: readonly SyncRecord[]): number {
+  let bytes = 0
+  let n = 0
+  while (n < records.length && n < CHUNK) {
+    bytes += JSON.stringify(records[n]).length
+    if (n > 0 && bytes > BATCH_BYTES) break
+    n++
+  }
+  return n
+}
 
 async function pushAndPull(): Promise<void> {
   const startedAt = Date.now()
@@ -207,9 +239,10 @@ async function pushAndPull(): Promise<void> {
   const pushedTombstones = pending.filter((c) => c.deleted)
   let more = true
   while (pending.length || more) {
-    const batch = pending.slice(0, CHUNK)
-    pending = pending.slice(CHUNK)
-    const res = await api<SyncResponse>('/api/sync', { method: 'POST', body: JSON.stringify({ since: state.version, changes: batch }) })
+    const size = batchSize(pending)
+    const batch = pending.slice(0, size)
+    pending = pending.slice(size)
+    const res = await postSync(batch)
     await applyRemote(res.changes)
     update({ version: res.version })
     more = res.more

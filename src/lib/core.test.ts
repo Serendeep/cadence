@@ -131,3 +131,15 @@ describe('timer machine', () => {
     expect(timerReducer(s, { type: 'release', at: 5100 }, cfg).phase).toBe('idle')
   })
 })
+
+describe('rolling averages', () => {
+  it('match a fresh WCA average of every window, DNFs included', () => {
+    let seed = 3
+    const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647)
+    const values = Array.from({ length: 600 }, () => (rand() < 0.04 ? DNF : 8000 + Math.round(rand() * 9000)))
+    for (const n of [5, 12, 50, 100]) {
+      const fast = rollingAverage(values, n)
+      values.forEach((_, i) => expect(fast[i]).toBe(i + 1 < n ? null : averageOf(values.slice(0, i + 1), n)))
+    }
+  })
+})
