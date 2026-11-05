@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react'
 import { registerSW } from 'virtual:pwa-register'
+import { whenNotSolving } from './solving'
 import { toast } from './toast'
 
 const UPDATE_TOAST_MS = 60 * 60 * 1000
@@ -57,7 +58,8 @@ function onceFlag(key: string): boolean {
 /** Browser only: offline cache with an update prompt, durable storage, and the iOS install hint. */
 export function startWebApp(): void {
   const update = registerSW({
-    onNeedRefresh: () => toast('A new version is ready', { label: 'Reload', run: () => void update(true) }, UPDATE_TOAST_MS),
+    // never interrupt a solve: the notice waits until the current one is over
+    onNeedRefresh: () => whenNotSolving(() => toast('A new version is ready', { label: 'Reload', run: () => void update(true) }, UPDATE_TOAST_MS)),
     onRegisterError: (e: unknown) => console.warn('Offline support could not start', e),
     onRegisteredSW: (_url, registration) => {
       if (!registration) return
