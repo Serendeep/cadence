@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest'
-import { makeBackup, parseCstimer, parseImport, toCstimer } from './importExport'
+import { describe, expect, it, test } from 'vitest'
+import { makeBackup, parseCstimer, parseImport, toCstimer, withoutDuplicates } from './importExport'
 
 const sample = {
   session1: [
@@ -36,4 +36,13 @@ describe('cstimer import', () => {
     const cs = parseCstimer(toCstimer(sessions, solves))
     expect(cs.solves[0]).toMatchObject({ time: 12000, penalty: '+2', scramble: 'R' })
   })
+})
+
+test('importing the same solves twice adds nothing, and sessions left empty are dropped', () => {
+  const solve = (sessionIndex: number, time: number) => ({ sessionIndex, time, penalty: 'ok' as const, scramble: `R U ${time}`, event: '333', date: 1000 + time })
+  const data = { sessions: [{ name: 'A', event: '333', created: 0, order: 0 }, { name: 'B', event: '333', created: 0, order: 1 }], solves: [solve(0, 1), solve(1, 2), solve(1, 3)], skipped: 0 }
+  const { data: out, duplicates } = withoutDuplicates(data, [{ date: 1001, time: 1, scramble: 'R U 1' }, { date: 1002, time: 2, scramble: 'R U 2' }])
+  expect(duplicates).toBe(2)
+  expect(out.sessions.map((s) => s.name)).toEqual(['B'])
+  expect(out.solves).toEqual([{ ...solve(1, 3), sessionIndex: 0 }])
 })

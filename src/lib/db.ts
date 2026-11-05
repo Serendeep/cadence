@@ -119,16 +119,19 @@ export async function deleteSolve(id: number): Promise<void> {
 
 export const sessionSolves = (sessionId: number) => db.solves.where('[sessionId+date]').between([sessionId, Dexie.minKey], [sessionId, Dexie.maxKey]).toArray()
 
-/** Adds imported sessions and solves in one transaction; returns how many solves were added. */
-export async function importData(data: ImportedData): Promise<number> {
+/** The existing session an imported one adds to: same name and event, so a fresh csTimer export tops up what is here. */
+export const matchSession = (existing: readonly Session[], s: Pick<Session, 'name' | 'event'>) => existing.find((e) => e.name === s.name && e.event === s.event)
+
+/** Adds imported solves in one transaction, into matching sessions or new ones; returns their session ids, in file order. */
+export async function importData(data: ImportedData): Promise<number[]> {
   return db.transaction('rw', db.sessions, db.solves, async () => {
-    const last = await db.sessions.orderBy('order').last()
-    const base = (last?.order ?? -1) + 1
+    const existing = await db.sessions.toArray()
+    let order = Math.max(-1, ...existing.map((s) => s.order)) + 1
     const ids: number[] = []
-    for (const [i, s] of data.sessions.entries()) ids.push(await db.sessions.add({ ...s, order: base + i }))
+    for (const s of data.sessions) ids.push(matchSession(existing, s)?.id ?? (await db.sessions.add({ ...s, order: order++ })))
     const rows = data.solves.map(({ sessionIndex, ...rest }) => ({ ...rest, sessionId: ids[sessionIndex] }))
     await db.solves.bulkAdd(rows)
-    return rows.length
+    return ids
   })
 }
 

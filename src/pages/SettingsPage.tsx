@@ -1,10 +1,11 @@
 import { AnimatePresence } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 import { Segmented, Switch } from '../components/Bits'
-import { clearAll, db, importData } from '../lib/db'
+import { clearAll, db, importData, matchSession } from '../lib/db'
 import { connectCube, connectExternal, disconnectCube, disconnectExternal, useDevices, type CubeKind } from '../lib/deviceStore'
 import { bluetoothAvailable } from '../lib/devices'
-import { makeBackup, parseImport, toCstimer } from '../lib/importExport'
+import { eventById } from '../lib/events'
+import { makeBackup, parseImport, toCstimer, withoutDuplicates, type ImportedData } from '../lib/importExport'
 import { setSettings, useSettings, type ThemeName } from '../lib/settings'
 import { toast } from '../lib/toast'
 import { installApp, useCanInstall } from '../lib/pwa'
@@ -30,6 +31,57 @@ function download(name: string, data: unknown) {
 }
 
 const stamp = () => new Date().toISOString().slice(0, 10)
+
+interface ImportPreview {
+  file: string
+  data: ImportedData
+  duplicates: number
+  /** Per imported session: true when it tops up a session already here */
+  merges: boolean[]
+}
+
+const dateRange = (dates: number[]) => {
+  if (!dates.length) return ''
+  const fmt = (d: number) => new Date(d).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
+  const [from, to] = [fmt(Math.min(...dates)), fmt(Math.max(...dates))]
+  return from === to ? `from ${from}` : `${from} to ${to}`
+}
+
+/** What a file holds, before anything is written. */
+function ImportDialog({ preview, onCancel, onConfirm }: { preview: ImportPreview; onCancel: () => void; onConfirm: () => void }) {
+  const { data, duplicates } = preview
+  const counts = data.sessions.map((_, i) => data.solves.filter((s) => s.sessionIndex === i).length)
+  const nothing = data.solves.length === 0
+  return (
+    <Dialog title={nothing ? 'Nothing new to import' : `Import ${data.solves.length.toLocaleString()} solves?`} onClose={onCancel}>
+      <p className="dim">
+        {nothing
+          ? `Every solve in ${preview.file} is already here.`
+          : `${preview.file}, solves ${dateRange(data.solves.map((s) => s.date))}.`}
+        {duplicates > 0 && !nothing && ` ${duplicates.toLocaleString()} solves you already have are skipped.`}
+        {data.skipped > 0 && ` ${data.skipped.toLocaleString()} unreadable rows are skipped.`}
+      </p>
+      {!nothing && (
+        <ul className="import-list">
+          {data.sessions.map((s, i) => (
+            <li key={i}>
+              <span>
+                {s.name}
+                {eventById(s.event).short !== s.name && <span className="dim"> · {eventById(s.event).short}</span>}
+              </span>
+              <span className="dim">{preview.merges[i] ? 'adds to yours' : 'new session'}</span>
+              <b className="num">{counts[i].toLocaleString()}</b>
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className="row">
+        <button type="button" className="btn" onClick={onCancel}>{nothing ? 'Close' : 'Cancel'}</button>
+        {!nothing && <button type="button" className="btn primary" onClick={onConfirm} autoFocus>Import</button>}
+      </div>
+    </Dialog>
+  )
+}
 
 function syncStatus(status: string, lastSynced: number | null): string {
   if (status === 'syncing') return 'Syncing…'
@@ -111,18 +163,32 @@ export function SettingsPage() {
   const bt = bluetoothAvailable()
   const canInstall = useCanInstall()
 
+  const [preview, setPreview] = useState<ImportPreview | null>(null)
+  const [dragging, setDragging] = useState(false)
+
   const onImport = async (f: File) => {
     setBusy(true)
     try {
       const parsed = parseImport(await f.text())
-      const n = await importData(parsed)
-      toast(`Imported ${n.toLocaleString()} solves in ${parsed.sessions.length} sessions${parsed.skipped ? `, skipped ${parsed.skipped} unreadable rows` : ''}`)
+      const [solves, sessions] = await Promise.all([db.solves.toArray(), db.sessions.toArray()])
+      const fresh = withoutDuplicates(parsed, solves)
+      setPreview({ file: f.name, ...fresh, merges: fresh.data.sessions.map((s) => matchSession(sessions, s) != null) })
     } catch (e) {
       toast(e instanceof Error ? e.message : 'Import failed.')
     } finally {
       setBusy(false)
       if (file.current) file.current.value = ''
     }
+  }
+
+  const confirmImport = async (p: ImportPreview) => {
+    setPreview(null)
+    const ids = await importData(p.data)
+    // open the biggest imported session, so the solves are on screen straight away
+    const counts = p.data.sessions.map((_, i) => p.data.solves.filter((s) => s.sessionIndex === i).length)
+    const biggest = ids[counts.indexOf(Math.max(...counts))]
+    if (biggest != null) setSettings({ sessionId: biggest })
+    toast(`Imported ${p.data.solves.length.toLocaleString()} solves`, { label: 'View solves', run: () => location.assign('#/solves') })
   }
 
   const exportAll = async (format: 'backup' | 'cstimer') => {
@@ -138,7 +204,22 @@ export function SettingsPage() {
   }
 
   return (
-    <div className="page" style={{ maxWidth: 1100 }}>
+    <div
+      className={`page ${dragging ? 'dropping' : ''}`}
+      style={{ maxWidth: 1100 }}
+      onDragOver={(e) => {
+        if (![...e.dataTransfer.types].includes('Files')) return
+        e.preventDefault()
+        setDragging(true)
+      }}
+      onDragLeave={(e) => e.currentTarget === e.target && setDragging(false)}
+      onDrop={(e) => {
+        e.preventDefault()
+        setDragging(false)
+        const f = e.dataTransfer.files[0]
+        if (f) void onImport(f)
+      }}
+    >
       <div className="pagehead">
         <div>
           <h1>Settings</h1>
@@ -271,7 +352,7 @@ export function SettingsPage() {
         <Switch label="Track cube rotations" checked={s.trackRotations} onChange={(v) => setSettings({ trackRotations: v })} />
       </Row>
 
-      <Row id="import" title="Import from csTimer" desc="In csTimer open Export, choose Export to file, then pick that file here. A Cadence backup works too. Imported sessions are added next to yours.">
+      <Row id="import" title="Import from csTimer" desc="In csTimer open Export, choose Export to file, then pick that file here or drop it anywhere on this page. A Cadence backup works too. You see what is in it before anything is added. Solves you already have are skipped, and sessions with the same name are topped up.">
         <ScrollHere when={location.hash.endsWith('?import')} />
         <input ref={file} type="file" accept=".json,.txt,application/json,text/plain" className="visually-hidden" id="import-file" onChange={(e) => e.target.files?.[0] && void onImport(e.target.files[0])} />
         <button type="button" className="btn primary" disabled={busy} onClick={() => file.current?.click()}>
@@ -298,6 +379,10 @@ export function SettingsPage() {
         </p>
         <a className="btn" href="https://buymeacoffee.com/serendeep" target="_blank" rel="noreferrer">Buy me a coffee</a>
       </Row>
+
+      <AnimatePresence>
+        {preview && <ImportDialog preview={preview} onCancel={() => setPreview(null)} onConfirm={() => void confirmImport(preview)} />}
+      </AnimatePresence>
 
       <AnimatePresence>
         {confirmClear && (

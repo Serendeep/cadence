@@ -336,6 +336,11 @@ textarea { width: 100%; resize: vertical; min-height: 72px; }
 /* without comments the numbers would spread across the full width */
 .solves-table tr.dayrow:hover { background: none; }
 .solves-table tr.dayrow td { height: 36px; padding-top: 14px; font-size: 12px; color: var(--faint); border-top: 0; text-align: left; }
+.import-list { list-style: none; padding: 0; margin: 4px 0 18px; max-height: 40vh; overflow: auto; }
+.import-list li { display: grid; grid-template-columns: 1fr auto 64px; gap: 12px; align-items: baseline; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.import-list li b { text-align: right; }
+/* a file dragged over Settings: the whole page is the drop target */
+.page.dropping { outline: 2px dashed var(--acc); outline-offset: -8px; border-radius: var(--r); }
 .drawer-nav { display: flex; gap: 2px; }
 .drawer-nav .flip svg { transform: scaleX(-1); }
 .drawer-nav button:disabled { opacity: 0.35; }

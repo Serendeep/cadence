@@ -173,3 +173,21 @@ export function toCstimer(sessions: Session[], solves: Solve[]): Record<string, 
   out.properties = { sessionData: JSON.stringify(sessionData), sessionN: sessions.length }
   return out
 }
+
+const solveKey = (s: { date: number; time: number; scramble: string }) => `${s.date}|${s.time}|${s.scramble}`
+
+/** Drops solves already stored here (same finish time, time and scramble) and sessions left empty, so importing a file twice adds nothing. */
+export function withoutDuplicates(data: ImportedData, existing: readonly { date: number; time: number; scramble: string }[]): { data: ImportedData; duplicates: number } {
+  const have = new Set(existing.map(solveKey))
+  const fresh = data.solves.filter((s) => !have.has(solveKey(s)))
+  const used = [...new Set(fresh.map((s) => s.sessionIndex))].sort((a, b) => a - b)
+  const index = new Map(used.map((old, i) => [old, i]))
+  return {
+    data: {
+      sessions: used.map((old, i) => ({ ...data.sessions[old], order: i })),
+      solves: fresh.map((s) => ({ ...s, sessionIndex: index.get(s.sessionIndex)! })),
+      skipped: data.skipped,
+    },
+    duplicates: data.solves.length - fresh.length,
+  }
+}
