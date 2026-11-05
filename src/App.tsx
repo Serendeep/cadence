@@ -187,7 +187,7 @@ const MAC_HELP = /Linux/.test(navigator.userAgent) && !/Android/.test(navigator.
   <>A Bluetooth scanner app such as nRF Connect shows it next to the cube's name.</>
 )
 
-function MacPrompt({ deviceName, suggested, failed }: MacRequest) {
+function MacPrompt({ deviceName, suggested, failed, advertisementsOff }: MacRequest) {
   const [mac, setMac] = useState(suggested ?? '')
   const valid = /^([0-9a-f]{2}[:-]){5}[0-9a-f]{2}$/i.test(mac.trim())
   return (
@@ -200,6 +200,11 @@ function MacPrompt({ deviceName, suggested, failed }: MacRequest) {
         )}{' '}
         {MAC_HELP}
       </p>
+      {advertisementsOff && (
+        <p className="dim">
+          To skip this step, open <span className="mono">chrome://flags</span>, turn on <b>Experimental Web Platform features</b>, restart Chrome and connect again. Cadence then reads the address from the cube itself.
+        </p>
+      )}
       <form
         onSubmit={(e) => {
           e.preventDefault()

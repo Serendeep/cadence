@@ -23,6 +23,28 @@ export interface MacRequest {
   deviceName: string
   suggested?: string
   failed?: string
+  /** The browser hides advertisements, the reliable source of the address, until its experimental features are on */
+  advertisementsOff?: boolean
+}
+
+// addresses that completed a handshake, by cube name, so later connections skip the guessing
+const MAC_STORE = 'cadence:moyu-macs'
+
+function rememberedMacs(): Record<string, string> {
+  try {
+    const parsed: unknown = JSON.parse(localStorage.getItem(MAC_STORE) ?? '{}')
+    return typeof parsed === 'object' && parsed !== null ? (parsed as Record<string, string>) : {}
+  } catch {
+    return {}
+  }
+}
+
+function rememberMac(name: string, mac: string): void {
+  try {
+    localStorage.setItem(MAC_STORE, JSON.stringify({ ...rememberedMacs(), [name]: mac }))
+  } catch {
+    // storage blocked: the next connection finds the address the same way again
+  }
 }
 
 /** Asks the user for the cube's MAC address when it cannot be discovered; resolve null to cancel. */
@@ -100,10 +122,13 @@ export function parseMy32(bytes: number[]): My32Message {
   return { type: 'moves', moveCount: bits(v, 88, 96), moves, gaps }
 }
 
+const platform = () => (navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData?.platform
+// watchAdvertisements exists on Linux/ChromeOS but never fires there
+const advertisementsNeverFire = () => platform() === 'Linux' || platform() === 'Chrome OS'
+
+/** The address is the last 6 bytes of the manufacturer data, in reverse order. */
 async function macFromAdvertisement(device: BluetoothDevice): Promise<string | null> {
-  const platform = (navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData?.platform
-  // watchAdvertisements exists on Linux/ChromeOS but never fires there
-  if (!('watchAdvertisements' in device) || platform === 'Linux' || platform === 'Chrome OS') return null
+  if (!('watchAdvertisements' in device) || advertisementsNeverFire()) return null
   const abort = new AbortController()
   return new Promise((resolve) => {
     const timer = window.setTimeout(() => done(null), 10000)
@@ -135,9 +160,11 @@ export async function connectMoyu32(h: SmartCubeHandlers, askMac: MacPrompt): Pr
   const fromName = /^WCU_MY32_([0-9A-F]{2})([0-9A-F]{2})$/.exec(name)
   // shortcut: the name only gives the last two bytes; the rest is the usual MoYu prefix, corrected by the prompt below if wrong
   const guess = fromName ? `CF:30:16:00:${fromName[1]}:${fromName[2]}` : undefined
+  const advertisementsOff = !('watchAdvertisements' in device) && !advertisementsNeverFire()
   const advertised = await macFromAdvertisement(device)
-  diag('moyu32.mac', { name, source: advertised ? 'advertisement' : guess ? 'name' : 'prompt' })
-  let mac = advertised ?? guess ?? (await askMac({ deviceName: name }))
+  const remembered = rememberedMacs()[name]
+  diag('moyu32.mac', { name, source: advertised ? 'advertisement' : remembered ? 'remembered' : guess ? 'name' : 'prompt' })
+  let mac = advertised ?? remembered ?? guess ?? (await askMac({ deviceName: name, advertisementsOff }))
   if (!mac) throw new Error('The cube needs its MAC address to decrypt its moves.')
   let codec = makeCodec(mac)
 
@@ -212,7 +239,7 @@ export async function connectMoyu32(h: SmartCubeHandlers, askMac: MacPrompt): Pr
   }
   while (!(await answered())) {
     diag('moyu32.handshake.failed', { name }, 'warn')
-    const next = await askMac({ deviceName: name, suggested: mac, failed: mac })
+    const next = await askMac({ deviceName: name, suggested: mac, failed: mac, advertisementsOff })
     if (!next) {
       disconnect()
       throw new Error('The cube did not answer, so its moves cannot be read. Check its Bluetooth address and connect again.')
@@ -222,6 +249,7 @@ export async function connectMoyu32(h: SmartCubeHandlers, askMac: MacPrompt): Pr
   }
 
   diag('moyu32.handshake.ok', { name })
+  rememberMac(name, mac)
   // 0xAC with byte 2 set switches the orientation stream on, cleared switches it off
   await request(172, [0, h.gyro ? 1 : 0])
   return { name, markSolved: () => undefined, disconnect }
