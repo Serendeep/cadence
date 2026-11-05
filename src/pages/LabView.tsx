@@ -8,8 +8,10 @@ import { diag } from '../lib/diag'
 import { isBlind } from '../lib/events'
 import { setSettings } from '../lib/settings'
 import { newTracker, resetTracker, scrambleHint, trackMove, type Tracker } from '../lib/smartSolve'
+import { createRotationDetector, rotationsPerPhase, timeline } from '../lib/rotations'
 import { inspectionPenalty } from '../lib/timerMachine'
 import { formatMs } from '../lib/time'
+import type { TimedMove } from '../lib/types'
 import { inspectionCaller, preloadCalls } from '../lib/voice'
 import { Twisty, type TwistyHandle } from '../components/Cube'
 import { Results } from '../components/Results'
@@ -40,6 +42,10 @@ export function LabView({ data, settings, scramble, scrambleError, onNewScramble
     trackerRef.current = next
     setTrackerState(next)
   }, [])
+  // whole-cube rotations in the current solve; a ref for the same reason as the tracker
+  const detector = useRef(createRotationDetector())
+  const rotationsRef = useRef<TimedMove[]>([])
+  const [rotations, setRotations] = useState<TimedMove[]>([])
   const inspRef = useRef(inspStart)
   const caller = useRef(inspectionCaller())
   const voiceRef = useRef(settings.inspectionVoice)
@@ -67,14 +73,20 @@ export function LabView({ data, settings, scramble, scrambleError, onNewScramble
       const t = trackerRef.current
       if (!t) return
       twisty.current?.addMove(m)
+      detector.current.faceTurn(m, at)
       const { tracker: next, finished } = trackMove(t, m, at)
       setTracker(next)
+      if (t.phase !== 'solving' && next.phase === 'solving') {
+        detector.current.reset()
+        rotationsRef.current = []
+        setRotations([])
+      }
       if (next.phase === 'solving') {
         const p = cfopProgress(next.cube)
         setReached((r) => (p > r.length ? [...r, ...Array(p - r.length).fill(Math.max(0, at - next.start))] : r))
       }
       if (finished) {
-        diag('lab.solve.finished', { moves: finished.moves.length, ms: finished.time })
+        diag('lab.solve.finished', { moves: finished.moves.length, rotations: rotationsRef.current.length, ms: finished.time })
         const insp = inspRef.current
         setInspStart(null)
         setNow(finished.time)
@@ -83,6 +95,7 @@ export function LabView({ data, settings, scramble, scrambleError, onNewScramble
           penalty: insp != null ? inspectionPenalty(next.start - insp) : 'ok',
           splits: finished.splits,
           moves: finished.moves,
+          rotations: rotationsRef.current,
           source: 'smartcube',
         })
       }
@@ -93,7 +106,16 @@ export function LabView({ data, settings, scramble, scrambleError, onNewScramble
   useEffect(() => onCubeMove(onMove), [onMove])
   useEffect(() => {
     if (!settings.trackRotations) return
-    return onCubeOrientation((q) => twisty.current?.setOrientation(q))
+    return onCubeOrientation((q) => {
+      twisty.current?.setOrientation(q)
+      const t = trackerRef.current
+      if (t?.phase !== 'solving') return
+      const at = performance.now()
+      const r = detector.current.feed(q, at)
+      if (!r) return
+      rotationsRef.current = [...rotationsRef.current, { m: r, t: Math.max(0, Math.round(at - t.start)) }]
+      setRotations(rotationsRef.current)
+    })
   }, [settings.trackRotations])
 
   useEffect(() => {
@@ -138,6 +160,11 @@ export function LabView({ data, settings, scramble, scrambleError, onNewScramble
   const lastSplits = !solving && last?.splits?.length === 4 ? last.splits : null
   const phaseEnds = solving ? reached : lastSplits ?? []
   const lastMoveCounts = !solving && last?.moves && lastSplits ? movesPerPhase(last.moves.map((m) => m.t), lastSplits) : null
+  const lastRotationCounts = !solving && last?.rotations && lastSplits ? rotationsPerPhase(last.rotations, lastSplits) : null
+  const shownRotations = solving ? rotations.length : last?.rotations?.length
+  const fullStream = timeline(moves, solving ? rotations : last?.rotations ?? [])
+  // keyed by position in the whole solve so items keep their identity (and do not re-animate) as the list scrolls
+  const stream = fullStream.slice(-TICKER_ITEMS).map((item, i) => ({ ...item, key: Math.max(0, fullStream.length - TICKER_ITEMS) + i }))
 
   return (
     <div className="page lab">
@@ -183,6 +210,7 @@ export function LabView({ data, settings, scramble, scrambleError, onNewScramble
         <div className="live-stats">
           <div>tps<b>{tps ? tps.toFixed(2) : '—'}</b></div>
           <div>moves<b>{solving ? moves.length : last?.moves?.length ?? '—'}</b></div>
+          {settings.trackRotations && <div>rotations<b>{shownRotations ?? '—'}</b></div>}
           <div>ao5<b>{formatMs(data.stats.current[5])}</b></div>
         </div>
 
@@ -198,7 +226,10 @@ export function LabView({ data, settings, scramble, scrambleError, onNewScramble
                 <div className="tr">
                   <motion.i initial={false} animate={{ scaleX: done ? 1 : current ? 0.35 : 0 }} transition={{ duration: 0.4 }} />
                 </div>
-                <b>{lastMoveCounts ? `${lastMoveCounts[i]} mv` : ''}</b>
+                <b>
+                  {lastMoveCounts ? `${lastMoveCounts[i]} mv` : ''}
+                  {lastRotationCounts?.[i] ? <span className="rot"> · {lastRotationCounts[i]} rot</span> : null}
+                </b>
                 <b>{done && start != null ? formatMs(end - start) : '—'}</b>
               </div>
             )
@@ -230,9 +261,9 @@ export function LabView({ data, settings, scramble, scrambleError, onNewScramble
         <span>moves</span>
         <div className="stream">
           <AnimatePresence initial={false}>
-            {moves.slice(-28).map((m, i, arr) => (
-              <motion.span key={`${moves.length - arr.length + i}`} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.15 }}>
-                {m.m}
+            {stream.map((m) => (
+              <motion.span key={m.key} className={m.rotation ? 'rot' : undefined} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.15 }}>
+                {m.rotation ? `(${m.m})` : m.m}
               </motion.span>
             ))}
           </AnimatePresence>
@@ -248,6 +279,8 @@ export function LabView({ data, settings, scramble, scrambleError, onNewScramble
     </div>
   )
 }
+
+const TICKER_ITEMS = 28
 
 function movesPerPhase(times: number[], splits: number[]): number[] {
   return splits.map((end, i) => times.filter((t) => t <= end && (i === 0 || t > splits[i - 1])).length)

@@ -125,6 +125,7 @@ export function parseBackup(json: unknown): ImportedData {
       comment: typeof v.comment === 'string' ? v.comment : undefined,
       splits: Array.isArray(v.splits) && v.splits.every(finite) ? (v.splits as number[]) : undefined,
       moves: Array.isArray(v.moves) ? (v.moves as Solve['moves']) : undefined,
+      rotations: Array.isArray(v.rotations) ? (v.rotations as Solve['rotations']) : undefined,
       source: 'import',
     })
   }

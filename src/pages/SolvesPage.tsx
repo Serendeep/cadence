@@ -5,6 +5,7 @@ import { CubeNet, Twisty } from '../components/Cube'
 import { Menu } from '../components/Menu'
 import { removeSolveWithUndo } from '../components/Results'
 import { BackIcon, CloseIcon } from '../components/icons'
+import { timeline } from '../lib/rotations'
 import { useSessionData } from '../hooks/useSessionData'
 import { phaseDurations } from '../lib/cfop'
 import { createSession, deleteSession, updateSession, updateSolve } from '../lib/db'
@@ -317,10 +318,15 @@ function SolveDrawer({ solve, index, onClose, decimals, onNewer, onOlder }: Draw
           <>
             <h3 style={{ fontSize: 14, margin: '28px 0 6px' }}>
               Reconstruction · {solve.moves.length} moves · {(solve.moves.length / (solve.time / 1000)).toFixed(2)} tps
+              {solve.rotations?.length ? ` · ${solve.rotations.length} rotation${solve.rotations.length === 1 ? '' : 's'}` : ''}
             </h3>
-            <p className="mono dim" style={{ margin: 0, fontSize: 13, lineHeight: 1.7 }}>{solve.moves.map((m) => m.m).join(' ')}</p>
+            <p className="mono dim recon" style={{ margin: 0, fontSize: 13, lineHeight: 1.7 }}>
+              {timeline(solve.moves, solve.rotations).map((item, i) => (
+                <span key={i} className={item.rotation ? 'rot' : undefined}>{i ? ' ' : ''}{item.rotation ? `(${item.m})` : item.m}</span>
+              ))}
+            </p>
             {replay ? (
-              <div style={{ height: 300, marginTop: 12 }}>
+              <div className="replay">
                 <Twisty event="333" visualization="3D" controls setup={solve.scramble} alg={solve.moves.map((m) => m.m).join(' ')} label="Solve replay" />
               </div>
             ) : (

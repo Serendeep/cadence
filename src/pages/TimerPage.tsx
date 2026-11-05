@@ -25,6 +25,7 @@ export interface SaveInput {
   penalty: Penalty
   splits?: number[]
   moves?: TimedMove[]
+  rotations?: TimedMove[]
   source: InputSource
 }
 
@@ -81,6 +82,7 @@ export function TimerPage({ onFocusChange }: { onFocusChange: (f: boolean) => vo
         date: Date.now(),
         splits: r.splits && r.splits.length > 1 ? r.splits.map(Math.round) : undefined,
         moves: r.moves,
+        rotations: r.rotations?.length ? r.rotations : undefined,
         source: r.source,
       })
       load()

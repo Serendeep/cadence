@@ -23,6 +23,8 @@ export interface Solve {
   /** Cumulative phase end times in ms; the last entry equals `time` */
   splits?: number[]
   moves?: TimedMove[]
+  /** Whole-cube rotations (x, y', z2…) from a gyroscope cube, kept apart from moves so move counts and TPS stay pure */
+  rotations?: TimedMove[]
   source?: InputSource
 }
 
