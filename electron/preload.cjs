@@ -18,4 +18,7 @@ contextBridge.exposeInMainWorld('desktop', {
   installUpdate() {
     ipcRenderer.send('update-install')
   },
+  signIn() {
+    return ipcRenderer.invoke('auth-sign-in')
+  },
 })

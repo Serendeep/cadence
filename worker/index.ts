@@ -1,8 +1,7 @@
+import { handleApi } from './api'
 import { cleanLogBatch, MAX_BODY_BYTES } from './log'
 
-interface Env {
-  ASSETS: { fetch: (req: Request) => Promise<Response> }
-}
+export { UserStore } from './userStore'
 
 // the desktop app posts from app://, so the log endpoint accepts any origin; it only ever writes to the log
 const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type' }
@@ -36,7 +35,7 @@ export default {
   async fetch(req: Request, env: Env): Promise<Response> {
     const { pathname } = new URL(req.url)
     if (pathname === '/api/log') return handleLog(req)
-    if (pathname.startsWith('/api/')) return new Response('Not found', { status: 404 })
+    if (pathname.startsWith('/api/')) return handleApi(req, env)
     return env.ASSETS.fetch(req)
   },
-}
+} satisfies ExportedHandler<Env>

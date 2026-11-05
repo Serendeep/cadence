@@ -9,7 +9,15 @@ export interface TimedMove {
   t: number
 }
 
-export interface Solve {
+/** Fields every synced row carries; the database fills them in on write. */
+export interface Synced {
+  /** Stable id shared by every device; the numeric `id` is local to one browser */
+  uid?: string
+  /** Epoch ms of the last edit on any device; the newest edit wins when devices disagree */
+  updated?: number
+}
+
+export interface Solve extends Synced {
   id?: number
   sessionId: number
   /** Raw time in milliseconds, before any penalty */
@@ -28,7 +36,7 @@ export interface Solve {
   source?: InputSource
 }
 
-export interface Session {
+export interface Session extends Synced {
   id?: number
   name: string
   event: string

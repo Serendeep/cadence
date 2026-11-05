@@ -1,4 +1,4 @@
-import type { Penalty, Session, Solve } from './types'
+import type { InputSource, Penalty, Session, Solve, TimedMove } from './types'
 
 /** cstimer scramble-type ids mapped to WCA / cubing.js event ids. */
 const CSTIMER_EVENTS: Record<string, string> = {
@@ -15,8 +15,8 @@ export interface ImportedData {
   skipped: number
 }
 
-const isObj = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v)
-const finite = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v)
+export const isObj = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v)
+export const finite = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v)
 
 function cstimerPenalty(p: unknown): Penalty | null {
   if (p === 0) return 'ok'
@@ -84,7 +84,7 @@ export function parseCstimer(json: unknown): ImportedData {
 }
 
 // the original name, kept so older backups still import
-export const BACKUP_APP = 'better-cstimer'
+const BACKUP_APP = 'better-cstimer'
 
 export interface Backup {
   app: typeof BACKUP_APP
@@ -98,8 +98,29 @@ export function makeBackup(sessions: Session[], solves: Solve[]): Backup {
   return { app: BACKUP_APP, version: 1, exported: Date.now(), sessions, solves }
 }
 
+const SOURCES: readonly InputSource[] = ['keyboard', 'touch', 'stackmat', 'smartcube', 'gantimer', 'import']
+const timedMoves = (v: unknown): TimedMove[] | undefined =>
+  Array.isArray(v) && v.every((m) => isObj(m) && typeof m.m === 'string' && finite(m.t)) ? (v as TimedMove[]) : undefined
+
+/** The fields of a stored solve, checked one by one; null when it has no usable time. Used for backups and for sync. */
+export function solveFields(v: Record<string, unknown>): Omit<Solve, 'id' | 'sessionId' | 'uid' | 'updated'> | null {
+  if (!finite(v.time) || !['ok', '+2', 'dnf'].includes(v.penalty as string)) return null
+  return {
+    time: v.time,
+    penalty: v.penalty as Penalty,
+    scramble: typeof v.scramble === 'string' ? v.scramble : '',
+    event: typeof v.event === 'string' ? v.event : '333',
+    date: finite(v.date) ? v.date : Date.now(),
+    comment: typeof v.comment === 'string' ? v.comment : undefined,
+    splits: Array.isArray(v.splits) && v.splits.every(finite) ? (v.splits as number[]) : undefined,
+    moves: timedMoves(v.moves),
+    rotations: timedMoves(v.rotations),
+    source: SOURCES.includes(v.source as InputSource) ? (v.source as InputSource) : undefined,
+  }
+}
+
 /** Parses our own backup file, validating each solve. */
-export function parseBackup(json: unknown): ImportedData {
+function parseBackup(json: unknown): ImportedData {
   if (!isObj(json) || json.app !== BACKUP_APP || !Array.isArray(json.sessions) || !Array.isArray(json.solves))
     throw new Error('This file is not a Cadence backup.')
   const index = new Map<number, number>()
@@ -111,23 +132,13 @@ export function parseBackup(json: unknown): ImportedData {
   }
   for (const v of json.solves) {
     const si = isObj(v) && finite(v.sessionId) ? index.get(v.sessionId) : undefined
-    if (!isObj(v) || si == null || !finite(v.time) || !['ok', '+2', 'dnf'].includes(v.penalty as string)) {
+    if (!isObj(v) || si == null) {
       out.skipped++
       continue
     }
-    out.solves.push({
-      sessionIndex: si,
-      time: v.time,
-      penalty: v.penalty as Penalty,
-      scramble: typeof v.scramble === 'string' ? v.scramble : '',
-      event: typeof v.event === 'string' ? v.event : '333',
-      date: finite(v.date) ? v.date : Date.now(),
-      comment: typeof v.comment === 'string' ? v.comment : undefined,
-      splits: Array.isArray(v.splits) && v.splits.every(finite) ? (v.splits as number[]) : undefined,
-      moves: Array.isArray(v.moves) ? (v.moves as Solve['moves']) : undefined,
-      rotations: Array.isArray(v.rotations) ? (v.rotations as Solve['rotations']) : undefined,
-      source: 'import',
-    })
+    const fields = solveFields(v)
+    if (fields) out.solves.push({ ...fields, sessionIndex: si, source: 'import' })
+    else out.skipped++
   }
   return out
 }

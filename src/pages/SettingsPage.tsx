@@ -8,6 +8,7 @@ import { makeBackup, parseImport, toCstimer } from '../lib/importExport'
 import { setSettings, useSettings, type ThemeName } from '../lib/settings'
 import { toast } from '../lib/toast'
 import { installApp, useCanInstall } from '../lib/pwa'
+import { deleteAccountData, signIn, signOut, syncNow, useSync } from '../lib/sync'
 import { playCall, VOICES } from '../lib/voice'
 import { Dialog } from './SolvesPage'
 
@@ -29,6 +30,56 @@ function download(name: string, data: unknown) {
 }
 
 const stamp = () => new Date().toISOString().slice(0, 10)
+
+function syncStatus(status: string, lastSynced: number | null): string {
+  if (status === 'syncing') return 'Syncing…'
+  if (status === 'error') return 'Could not reach the sync server. Your solves are safe here and sync when it is back.'
+  return lastSynced ? `Last synced ${new Date(lastSynced).toLocaleString()}` : 'Not synced yet'
+}
+
+/** Sign-in and sync; data stays on this device either way. */
+function AccountRow() {
+  const sync = useSync()
+  const [confirmWipe, setConfirmWipe] = useState(false)
+  if (!sync.token) {
+    return (
+      <Row id="account" title="Sync across devices" desc="Sign in with your World Cube Association account to keep your sessions, solves and settings the same on your phone, tablet and computer. Optional: without it, everything stays on this device.">
+        <button type="button" className="btn primary" onClick={() => void signIn()}>Sign in with WCA</button>
+      </Row>
+    )
+  }
+  const who = sync.account ? `${sync.account.name}${sync.account.wcaId ? ` · ${sync.account.wcaId}` : ''}` : 'Signed in'
+  return (
+    <Row id="account" title={who} desc={syncStatus(sync.status, sync.lastSynced)}>
+      <button type="button" className="btn" disabled={sync.status === 'syncing'} onClick={() => void syncNow()}>Sync now</button>
+      <button type="button" className="btn" onClick={() => void signOut().then(() => toast('Signed out. Your solves stay on this device.'))}>Sign out</button>
+      <button type="button" className="btn danger" onClick={() => setConfirmWipe(true)}>Delete synced data</button>
+      <AnimatePresence>
+        {confirmWipe && (
+          <Dialog title="Delete your synced data?" onClose={() => setConfirmWipe(false)}>
+            <p className="dim">This erases the copy of your sessions, solves and settings kept for syncing and signs out every device. Each device keeps the solves it already has.</p>
+            <div className="row">
+              <button type="button" className="btn" onClick={() => setConfirmWipe(false)}>Keep it</button>
+              <button
+                type="button"
+                className="btn danger"
+                onClick={() => {
+                  setConfirmWipe(false)
+                  deleteAccountData().then(
+                    () => toast('Synced data deleted. This device keeps its solves.'),
+                    () => toast('Could not delete the synced data. Check your connection and try again.'),
+                  )
+                }}
+              >
+                Delete synced data
+              </button>
+            </div>
+          </Dialog>
+        )}
+      </AnimatePresence>
+    </Row>
+  )
+}
 
 /** Scrolls its row into view once, for links that land on a specific setting. */
 function ScrollHere({ when }: { when: boolean }) {
@@ -91,9 +142,11 @@ export function SettingsPage() {
       <div className="pagehead">
         <div>
           <h1>Settings</h1>
-          <p>Saved on this device as you change them.</p>
+          <p>Saved on this device as you change them, and synced when you sign in.</p>
         </div>
       </div>
+
+      <AccountRow />
 
       {canInstall && (
         <Row title="Install the app" desc="Adds Cadence to your home screen or app list. It opens in its own window and works offline.">
@@ -231,7 +284,7 @@ export function SettingsPage() {
         <button type="button" className="btn" onClick={() => void exportAll('cstimer')}>csTimer format</button>
       </Row>
 
-      <Row title="Delete everything" desc="Removes all sessions and solves from this device. Settings stay.">
+      <Row title="Delete everything" desc="Removes all sessions and solves from this device and signs it out of sync, so your account keeps its copy. Settings stay.">
         <button type="button" className="btn danger" onClick={() => setConfirmClear(true)}>Delete all data</button>
       </Row>
 
@@ -257,7 +310,7 @@ export function SettingsPage() {
                 className="btn danger"
                 onClick={() => {
                   setConfirmClear(false)
-                  void clearAll().then(() => {
+                  void signOut().then(clearAll).then(() => {
                     setSettings({ sessionId: null })
                     toast('All data deleted')
                   })
