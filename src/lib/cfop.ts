@@ -19,8 +19,7 @@ export interface PhaseResult {
 
 /**
  * Detects CFOP phase boundaries from a smart-cube move log.
- * Picks the face whose F2L completed first, then walks back to where its cross last became solved,
- * so a cross that was built and broken early does not count.
+ * Picks the face whose F2L completed first; each phase ends the first time its state is reached on that face.
  */
 export function detectCfop(start: CubeState, moves: readonly TimedMove[]): PhaseResult | null {
   const states: CubeState[] = [start]
@@ -37,8 +36,8 @@ export function detectCfop(start: CubeState, moves: readonly TimedMove[]): Phase
       face = f
     }
   }
-  let crossAt = f2lAt
-  while (crossAt > 0 && crossSolved(states[crossAt - 1], face)) crossAt--
+  // the first time, not the last: every F2L insert (R U R') lifts a cross edge out for a move
+  const crossAt = states.findIndex((s, i) => i <= f2lAt && crossSolved(s, face))
   let ollAt = f2lAt
   while (ollAt < end && !ollSolved(states[ollAt], face)) ollAt++
 
