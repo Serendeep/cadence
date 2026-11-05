@@ -1,9 +1,12 @@
 import { useSyncExternalStore } from 'react'
 import { registerSW } from 'virtual:pwa-register'
+import { whenNotSolving } from './solving'
 import { toast } from './toast'
 
 const UPDATE_TOAST_MS = 60 * 60 * 1000
 const HINT_TOAST_MS = 20_000
+// browsers only look for a new service worker on navigation, so an open tab asks on its own
+const UPDATE_CHECK_MS = 30 * 60 * 1000
 const IOS_HINT_KEY = 'iosInstallHintShown'
 const INSTALL_OFFER_KEY = 'installOfferShown'
 
@@ -55,8 +58,21 @@ function onceFlag(key: string): boolean {
 /** Browser only: offline cache with an update prompt, durable storage, and the iOS install hint. */
 export function startWebApp(): void {
   const update = registerSW({
-    onNeedRefresh: () => toast('A new version is ready', { label: 'Reload', run: () => void update(true) }, UPDATE_TOAST_MS),
+    // never interrupt a solve: the notice waits until the current one is over
+    onNeedRefresh: () => whenNotSolving(() => toast('A new version is ready', { label: 'Reload', run: () => void update(true) }, UPDATE_TOAST_MS)),
     onRegisterError: (e: unknown) => console.warn('Offline support could not start', e),
+    onRegisteredSW: (_url, registration) => {
+      if (!registration) return
+      const check = () => {
+        // offline, or the server is unreachable: the next check tries again
+        if (navigator.onLine) registration.update().catch(() => undefined)
+      }
+      window.setInterval(check, UPDATE_CHECK_MS)
+      window.addEventListener('online', check)
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') check()
+      })
+    },
   })
   // without this the browser may clear the solve database when the disk runs low
   navigator.storage?.persist?.().catch((e: unknown) => console.warn('Persistent storage was refused', e))

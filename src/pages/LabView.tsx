@@ -7,6 +7,7 @@ import { disconnectCube, markCubeSolved, onCubeMove, onCubeOrientation, resetCub
 import { diag } from '../lib/diag'
 import { isBlind } from '../lib/events'
 import { setSettings } from '../lib/settings'
+import { setSolving } from '../lib/solving'
 import { newTracker, resetTracker, scrambleHint, trackMove, type Tracker } from '../lib/smartSolve'
 import { createRotationDetector, rotationsPerPhase, solverFrame, timeline } from '../lib/rotations'
 import { inspectionPenalty } from '../lib/timerMachine'
@@ -110,6 +111,9 @@ export function LabView({ data, settings, scramble, scrambleError, onNewScramble
   )
 
   useEffect(() => onCubeMove(onMove), [onMove])
+  const busy = tracker?.phase === 'solving' || inspStart != null
+  useEffect(() => setSolving(busy), [busy])
+  useEffect(() => () => setSolving(false), [])
   useEffect(() => {
     if (!settings.trackRotations) return
     return onCubeOrientation((q) => {

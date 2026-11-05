@@ -9,6 +9,7 @@ import { InsightsPage } from './pages/InsightsPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { Dialog, SolvesPage } from './pages/SolvesPage'
 import { TimerPage } from './pages/TimerPage'
+import { setSolving } from './lib/solving'
 
 type Route = 'timer' | 'solves' | 'insights' | 'settings'
 const ROUTES: { id: Route; label: string; icon: ReactNode }[] = [
@@ -55,7 +56,10 @@ export default function App() {
     clearDeviceError()
   }, [devices.error])
 
-  const onFocusChange = useCallback((f: boolean) => setFocused(f), [])
+  const onFocusChange = useCallback((f: boolean) => {
+    setFocused(f)
+    setSolving(f)
+  }, [])
   const go = (r: Route) => location.assign(`#/${r}`)
 
   return (
