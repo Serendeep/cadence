@@ -5,7 +5,7 @@ import { CubeNet, Twisty } from '../components/Cube'
 import { Menu } from '../components/Menu'
 import { removeSolveWithUndo } from '../components/Results'
 import { BackIcon, CloseIcon } from '../components/icons'
-import { timeline } from '../lib/rotations'
+import { solverFrame, timeline } from '../lib/rotations'
 import { useSessionData } from '../hooks/useSessionData'
 import { phaseDurations } from '../lib/cfop'
 import { createSession, deleteSession, updateSession, updateSolve } from '../lib/db'
@@ -245,6 +245,7 @@ function SolveDrawer({ solve, index, onClose, decimals, onNewer, onOlder }: Draw
   const replay = replayFor != null && replayFor === solve.id
   const ev = eventById(solve.event)
   const preview = useMemo(() => (ev.is3x3 ? scrambledState(solve.scramble) : null), [ev.is3x3, solve.scramble])
+  const recon = useMemo(() => solverFrame(timeline(solve.moves, solve.rotations)), [solve.moves, solve.rotations])
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') return onClose()
@@ -321,13 +322,13 @@ function SolveDrawer({ solve, index, onClose, decimals, onNewer, onOlder }: Draw
               {solve.rotations?.length ? ` · ${solve.rotations.length} rotation${solve.rotations.length === 1 ? '' : 's'}` : ''}
             </h3>
             <p className="mono dim recon" style={{ margin: 0, fontSize: 13, lineHeight: 1.7 }}>
-              {timeline(solve.moves, solve.rotations).map((item, i) => (
+              {recon.map((item, i) => (
                 <span key={i} className={item.rotation ? 'rot' : undefined}>{i ? ' ' : ''}{item.rotation ? `(${item.m})` : item.m}</span>
               ))}
             </p>
             {replay ? (
               <div className="replay">
-                <Twisty event="333" visualization="3D" controls setup={solve.scramble} alg={solve.moves.map((m) => m.m).join(' ')} label="Solve replay" />
+                <Twisty event="333" visualization="3D" controls setup={solve.scramble} alg={recon.map((m) => m.m).join(' ')} label="Solve replay" />
               </div>
             ) : (
               <button type="button" className="btn" style={{ marginTop: 12 }} onClick={() => setReplayFor(solve.id ?? null)}>Replay in 3D</button>

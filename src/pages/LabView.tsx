@@ -8,7 +8,7 @@ import { diag } from '../lib/diag'
 import { isBlind } from '../lib/events'
 import { setSettings } from '../lib/settings'
 import { newTracker, resetTracker, scrambleHint, trackMove, type Tracker } from '../lib/smartSolve'
-import { createRotationDetector, rotationsPerPhase, timeline } from '../lib/rotations'
+import { createRotationDetector, rotationsPerPhase, solverFrame, timeline } from '../lib/rotations'
 import { inspectionPenalty } from '../lib/timerMachine'
 import { formatMs } from '../lib/time'
 import type { TimedMove } from '../lib/types'
@@ -162,7 +162,7 @@ export function LabView({ data, settings, scramble, scrambleError, onNewScramble
   const lastMoveCounts = !solving && last?.moves && lastSplits ? movesPerPhase(last.moves.map((m) => m.t), lastSplits) : null
   const lastRotationCounts = !solving && last?.rotations && lastSplits ? rotationsPerPhase(last.rotations, lastSplits) : null
   const shownRotations = solving ? rotations.length : last?.rotations?.length
-  const fullStream = timeline(moves, solving ? rotations : last?.rotations ?? [])
+  const fullStream = solverFrame(timeline(moves, solving ? rotations : last?.rotations ?? []))
   // keyed by position in the whole solve so items keep their identity (and do not re-animate) as the list scrolls
   const stream = fullStream.slice(-TICKER_ITEMS).map((item, i) => ({ ...item, key: Math.max(0, fullStream.length - TICKER_ITEMS) + i }))
 

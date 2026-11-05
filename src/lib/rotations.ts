@@ -120,3 +120,26 @@ export function timeline(moves: readonly { m: string; t: number }[] = [], rotati
 export function rotationsPerPhase(rotations: readonly { t: number }[], splits: readonly number[]): number[] {
   return splits.map((end, i) => rotations.filter((r) => r.t <= end && (i === 0 || r.t > splits[i - 1])).length)
 }
+
+// the face each position moves to on one clockwise turn of the axis
+const CYCLES: Record<Axis, string> = { x: 'FUBD', y: 'FLBR', z: 'URDL' }
+
+const turnsOf = (token: string) => (token.endsWith("'") ? 3 : token.endsWith('2') ? 2 : 1)
+
+/**
+ * Renames the cube's moves the way the solver saw them: smart cubes name a turn by its centre colour,
+ * so after a y the turn they call R happens at the solver's F.
+ */
+export function solverFrame(items: readonly TimelineItem[]): TimelineItem[] {
+  let pos: Record<string, string> = { U: 'U', D: 'D', F: 'F', B: 'B', R: 'R', L: 'L' }
+  return items.map((item) => {
+    if (!item.rotation) return pos[item.m[0]] ? { ...item, m: pos[item.m[0]] + item.m.slice(1) } : item
+    for (const token of item.m.split(' ')) {
+      const cycle = CYCLES[token[0] as Axis]
+      for (let i = 0; i < turnsOf(token); i++) {
+        pos = Object.fromEntries(Object.entries(pos).map(([face, p]) => [face, cycle.includes(p) ? cycle[(cycle.indexOf(p) + 1) % 4] : p]))
+      }
+    }
+    return item
+  })
+}

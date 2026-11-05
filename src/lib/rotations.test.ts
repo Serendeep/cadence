@@ -1,6 +1,8 @@
 import { expect, test } from 'vitest'
 import { mul, type Quat } from './orientation'
-import { createRotationDetector, ORIENTATIONS, rotationName, rotationsPerPhase, snap, timeline } from './rotations'
+import { cube3x3x3 } from 'cubing/puzzles'
+import { Alg } from 'cubing/alg'
+import { createRotationDetector, ORIENTATIONS, rotationName, rotationsPerPhase, snap, solverFrame, timeline } from './rotations'
 
 const turn = (axis: 'x' | 'y' | 'z', deg: number): Quat => {
   const h = (-deg * Math.PI) / 360
@@ -66,4 +68,25 @@ test('rotations interleave with moves by time and are counted per phase', () => 
   const rotations = [{ m: 'y', t: 200 }, { m: 'x', t: 900 }]
   expect(timeline(moves, rotations).map((i) => (i.rotation ? `(${i.m})` : i.m)).join(' ')).toBe('R (y) U (x)')
   expect(rotationsPerPhase(rotations, [250, 500, 1000])).toEqual([1, 0, 1])
+})
+
+test('after a y the cube calls a front turn R, and the solver view names it F', () => {
+  const items = timeline([{ m: 'R', t: 1 }, { m: "R'", t: 3 }, { m: 'U2', t: 4 }], [{ m: 'y', t: 2 }])
+  expect(solverFrame(items).map((i) => i.m)).toEqual(['R', 'y', "F'", 'U2'])
+})
+
+test('replaying the solver view with its rotations solves the scramble, and the raw moves would not', async () => {
+  const kpuzzle = await cube3x3x3.kpuzzle()
+  const scramble = new Alg("R U F' L2 D B R' U' F2 L D' B2")
+  const cubeMoves = scramble.invert().toString().split(' ')
+  const rotations = ['y', "x'", 'z2', 'x y', "y'"]
+  // a rotation after every second move
+  const items = timeline(
+    cubeMoves.map((m, i) => ({ m, t: i * 10 })),
+    rotations.map((m, i) => ({ m, t: i * 20 + 5 })),
+  )
+  const solved = (alg: string) =>
+    kpuzzle.defaultPattern().applyAlg(scramble).applyAlg(new Alg(alg)).experimentalIsSolved({ ignorePuzzleOrientation: true, ignoreCenterOrientation: true })
+  expect(solved(solverFrame(items).map((i) => i.m).join(' '))).toBe(true)
+  expect(solved(items.map((i) => i.m).join(' '))).toBe(false)
 })
