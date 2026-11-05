@@ -104,7 +104,7 @@ export function InsightsPage() {
       <div className="kpis">
         <div className="kpi">
           Solves<b className="num">{stats.count.toLocaleString()}</b>
-          <small>{days.length} days practised</small>
+          <small>{days.length} {days.length === 1 ? 'day' : 'days'} practised</small>
         </div>
         {kpis.map(([label, v, sub], i) => (
           <div key={label} className={`kpi ${i === 0 ? 'lead' : ''}`}>

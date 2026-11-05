@@ -9,7 +9,7 @@ import { makeBackup, parseImport, toCstimer, withoutDuplicates, type ImportedDat
 import { setSettings, useSettings, type ThemeName } from '../lib/settings'
 import { toast } from '../lib/toast'
 import { installApp, useCanInstall } from '../lib/pwa'
-import { deleteAccountData, signIn, signOut, syncNow, useSync } from '../lib/sync'
+import { deleteAccountData, resolveAccountSwitch, signIn, signOut, syncNow, useSync } from '../lib/sync'
 import { playCall, VOICES } from '../lib/voice'
 import { Dialog } from './SolvesPage'
 
@@ -93,10 +93,26 @@ function syncStatus(status: string, lastSynced: number | null): string {
 function AccountRow() {
   const sync = useSync()
   const [confirmWipe, setConfirmWipe] = useState(false)
+  const switchDialog = (
+    <AnimatePresence>
+      {sync.switching && (
+        <Dialog title={`Add this device's solves to ${sync.switching.to}?`} onClose={() => resolveAccountSwitch(false)}>
+          <p className="dim">
+            This device last synced with {sync.switching.from}'s account. Signing in as {sync.switching.to} uploads every session and solve on this device into {sync.switching.to}'s account.
+          </p>
+          <div className="row">
+            <button type="button" className="btn" onClick={() => resolveAccountSwitch(false)}>Don't sign in</button>
+            <button type="button" className="btn primary" onClick={() => resolveAccountSwitch(true)}>Add them</button>
+          </div>
+        </Dialog>
+      )}
+    </AnimatePresence>
+  )
   if (!sync.token) {
     return (
       <Row id="account" title="Sync across devices" desc="Sign in with your World Cube Association account to keep your sessions, solves and settings the same on your phone, tablet and computer. Optional: without it, everything stays on this device.">
         <button type="button" className="btn primary" onClick={() => void signIn()}>Sign in with WCA</button>
+        {switchDialog}
       </Row>
     )
   }
@@ -227,6 +243,7 @@ export function SettingsPage() {
         </div>
       </div>
 
+      <h2 className="setting-group">Account</h2>
       <AccountRow />
 
       {canInstall && (
@@ -235,6 +252,7 @@ export function SettingsPage() {
         </Row>
       )}
 
+      <h2 className="setting-group">Appearance</h2>
       <Row title="Theme" desc="System follows your OS: paper in light mode, graphite in dark.">
         <button type="button" className="swatch" aria-pressed={s.theme === 'system'} onClick={() => setSettings({ theme: 'system' })}>
           <span style={{ background: 'linear-gradient(90deg, #f2f1ee 50%, #141416 50%)', padding: '8px 10px', fontSize: 18, fontWeight: 500 }}>
@@ -256,6 +274,7 @@ export function SettingsPage() {
         })}
       </Row>
 
+      <h2 className="setting-group">Timing</h2>
       <Row title="Inspection" desc="WCA 15 seconds. Starting after 15 s adds +2, after 17 s is a DNF. Blindfolded events skip it.">
         <Switch label="Inspection" checked={s.inspection} onChange={(v) => setSettings({ inspection: v })} />
         <span className="dim" style={{ fontSize: 14, marginLeft: 12 }}>Call out 8 s and 12 s</span>
@@ -315,6 +334,7 @@ export function SettingsPage() {
         <Switch label="Scramble preview" checked={s.scramblePreview} onChange={(v) => setSettings({ scramblePreview: v })} />
       </Row>
 
+      <h2 className="setting-group">Devices</h2>
       <Row
         id="devices"
         title="Timers and smart cubes"
@@ -352,6 +372,7 @@ export function SettingsPage() {
         <Switch label="Track cube rotations" checked={s.trackRotations} onChange={(v) => setSettings({ trackRotations: v })} />
       </Row>
 
+      <h2 className="setting-group">Your data</h2>
       <Row id="import" title="Import from csTimer" desc="In csTimer open Export, choose Export to file, then pick that file here or drop it anywhere on this page. A Cadence backup works too. You see what is in it before anything is added. Solves you already have are skipped, and sessions with the same name are topped up.">
         <ScrollHere when={location.hash.endsWith('?import')} />
         <input ref={file} type="file" accept=".json,.txt,application/json,text/plain" className="visually-hidden" id="import-file" onChange={(e) => e.target.files?.[0] && void onImport(e.target.files[0])} />

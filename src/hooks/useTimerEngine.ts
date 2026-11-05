@@ -3,6 +3,8 @@ import { onTimerStatus } from '../lib/deviceStore'
 import { inspectionCaller, preloadCalls, type Voice } from '../lib/voice'
 import { INSPECTION_MS, inspectionPenalty, initialTimer, timerReducer, type TimerConfig, type TimerEvent, type TimerResult, type TimerState } from '../lib/timerMachine'
 
+const READY_BUZZ_MS = 20
+
 export type EngineSource = 'manual' | 'external'
 
 export interface EngineConfig extends TimerConfig {
@@ -55,6 +57,8 @@ export function useTimerEngine(cfg: EngineConfig, onFinish: (r: TimerResult) => 
     const next = timerReducer(prev, ev, cfgRef.current)
     if (next === prev) return
     commit(next)
+    // a short buzz when the time turns green, so a thumb on a phone feels when to let go (no-op without a motor)
+    if (next.phase === 'ready' && prev.phase === 'holding') navigator.vibrate?.(READY_BUZZ_MS)
     if (next.phase === 'stopped' && prev.phase === 'running') {
       setNow(next.result.time)
       finishRef.current(next.result)

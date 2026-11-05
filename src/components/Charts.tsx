@@ -63,8 +63,9 @@ export function LineChart({ series, height = 220, xLabel = (i) => String(i + 1),
   if (!n || !finite.length) return <div className="empty">No finished solves to draw yet.</div>
   // clip the long tail so one 2-minute disaster does not flatten everything else
   const sorted = [...finite].sort((a, b) => a - b)
-  const lo = sorted[0]
-  const hi = sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.98))]
+  const top = sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.98))]
+  // one solve, or all the same time, still needs a range around it, or every tick reads the same
+  const [lo, hi] = sorted[0] === top ? [sorted[0] * 0.9, top * 1.1] : [sorted[0], top]
   const yt = ticks(Math.max(0, lo - (hi - lo) * 0.05), hi)
   const y0 = yt[0]
   const y1 = yt[yt.length - 1]
