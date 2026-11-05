@@ -75,6 +75,10 @@ export function LineChart({ series, height = 220, xLabel = (i) => String(i + 1),
   const y = (v: number) => PAD.t + ih - ((Math.min(v, y1) - y0) / (y1 - y0)) * ih
   const xt = Array.from(new Set(Array.from({ length: Math.min(6, n) }, (_, k) => Math.round((k / Math.max(1, Math.min(6, n) - 1)) * (n - 1)))))
 
+  // far more solves than pixels: one point per pixel column for lines, the column's fastest and slowest for dots; it looks the same
+  const dense = n > iw * 2
+  const column = (i: number) => Math.round(x(i))
+
   const path = (vals: (number | null)[]) => {
     let d = ''
     let pen = false
@@ -83,10 +87,24 @@ export function LineChart({ series, height = 220, xLabel = (i) => String(i + 1),
         pen = false
         return
       }
+      if (dense && pen && i + 1 < vals.length && column(i + 1) === column(i) && vals[i + 1] != null && vals[i + 1] !== DNF) return
       d += `${pen ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`
       pen = true
     })
     return d
+  }
+
+  const dots = (vals: (number | null)[]): number[] => {
+    const all = vals.flatMap((v, i) => (v == null || v === DNF ? [] : [i]))
+    if (!dense) return all
+    const extremes = new Map<number, [number, number]>()
+    for (const i of all) {
+      const c = column(i)
+      const e = extremes.get(c)
+      if (!e) extremes.set(c, [i, i])
+      else extremes.set(c, [vals[i]! < vals[e[0]]! ? i : e[0], vals[i]! > vals[e[1]]! ? i : e[1]])
+    }
+    return [...extremes.values()].flatMap(([a, b]) => (a === b ? [a] : [a, b]))
   }
 
   const onMove = (e: React.PointerEvent<SVGSVGElement>) => {
@@ -115,7 +133,9 @@ export function LineChart({ series, height = 220, xLabel = (i) => String(i + 1),
         {series.map((s) =>
           s.dots ? (
             <g key={s.name} fill={s.color}>
-              {s.values.map((v, i) => (v == null || v === DNF ? null : <circle key={i} cx={x(i)} cy={y(v)} r={n > 300 ? 1.2 : 2} />))}
+              {dots(s.values).map((i) => (
+                <circle key={i} cx={x(i)} cy={y(s.values[i]!)} r={n > 300 ? 1.2 : 2} />
+              ))}
             </g>
           ) : (
             <motion.path
