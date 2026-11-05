@@ -1,0 +1,50 @@
+import type { Penalty, Solve } from './types'
+
+export const DNF = Number.POSITIVE_INFINITY
+const PLUS_TWO_MS = 2000
+
+/** Time that counts for statistics: raw time with the penalty applied, Infinity for DNF. */
+export function effective(time: number, penalty: Penalty): number {
+  if (penalty === 'dnf') return DNF
+  return penalty === '+2' ? time + PLUS_TWO_MS : time
+}
+
+export const solveValue = (s: Pick<Solve, 'time' | 'penalty'>) => effective(s.time, s.penalty)
+
+/** 12345 -> "12.34", 72345 -> "1:12.34". Truncates like WCA and Stackmat, never rounds up. */
+export function formatMs(ms: number | null | undefined, decimals: 2 | 3 = 2): string {
+  if (ms == null || Number.isNaN(ms)) return '—'
+  if (ms === DNF) return 'DNF'
+  const unit = decimals === 3 ? 1 : 10
+  const total = Math.floor(ms / unit)
+  const frac = total % (decimals === 3 ? 1000 : 100)
+  const secs = Math.floor(total / (decimals === 3 ? 1000 : 100))
+  const m = Math.floor(secs / 60)
+  const s = secs % 60
+  const fracStr = String(frac).padStart(decimals, '0')
+  if (m > 0) return `${m}:${String(s).padStart(2, '0')}.${fracStr}`
+  return `${s}.${fracStr}`
+}
+
+export function formatSolve(s: Pick<Solve, 'time' | 'penalty'>): string {
+  if (s.penalty === 'dnf') return 'DNF'
+  const t = formatMs(effective(s.time, s.penalty))
+  return s.penalty === '+2' ? `${t}+` : t
+}
+
+/** Parses "12.34", "1:02.5", "12", "DNF" typed by a user. Returns ms or null when unreadable. */
+export function parseTime(input: string): number | null {
+  const v = input.trim()
+  if (!v) return null
+  if (/^dnf$/i.test(v)) return DNF
+  const m = /^(?:(\d+):)?(\d+)(?:[.,](\d{1,3}))?$/.exec(v)
+  if (!m) return null
+  const mins = m[1] ? Number(m[1]) : 0
+  const secs = Number(m[2])
+  const frac = m[3] ? Number(m[3].padEnd(3, '0')) : 0
+  return (mins * 60 + secs) * 1000 + frac
+}
+
+export function formatDate(epoch: number): string {
+  return new Date(epoch).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
+}
