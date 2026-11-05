@@ -1,0 +1,89 @@
+# User guide
+
+This guide covers timing with the keyboard or a touch screen, sessions, Insights, moving your history in and out, and sync. Smart cubes and external timers have their own page: [Smart cubes and timers](smart-cubes.md).
+
+## Timing a solve
+
+1. Read the scramble at the top and scramble your cube. The cube net in the corner shows what it should look like.
+2. Hold space, or touch and hold anywhere on a phone, until the time turns green.
+3. Let go to start. Everything except the time fades out.
+4. Press any key, or touch the screen, to stop.
+
+The result appears with OK, +2 and DNF buttons and a delete button. Penalties change the solve straight away, and a deleted solve can be brought back with Undo in the message that appears.
+
+| Key | What it does |
+| --- | --- |
+| Space | Hold and release to start; with inspection on, press once to start inspecting |
+| Any key | Stops a running solve |
+| Escape | Cancels inspection or a running solve, and closes dialogs and the solve drawer |
+| ← and → | In the solve drawer, move to the newer or older solve |
+
+The arrow next to "Next scramble" goes back to the previous scramble, and the copy button copies the current one.
+
+### Inspection
+
+Turn on Inspection in Settings, or tap "inspection off" above the scramble. Pressing space starts the WCA 15 seconds. A voice calls out 8 and 12 seconds; pick male, female or off. Starting after 15 seconds adds +2, and after 17 seconds the solve is a DNF. Blindfolded events skip inspection.
+
+### Phases
+
+Settings > Phases splits a solve into up to eight parts. With four phases they are named Cross, F2L, OLL and PLL; tap space at the end of each one and the last tap stops the timer. A bar under the time shows how long each phase took. Smart cubes detect the CFOP phases on their own, so you don't need to tap.
+
+### Other timing settings
+
+- **Hold to start:** how long space or a touch must be held before the time turns green, from instant to one second.
+- **While solving:** show the running time, only whole seconds, or nothing.
+- **Precision and preview:** two or three decimals, and whether the scramble preview is shown.
+- **Keep the screen on:** stops a phone or laptop from dimming or locking while Cadence is open.
+
+## Sessions
+
+Each session belongs to one event and keeps its own averages. The Solves page lists the current session's solves, newest first, grouped by day, with ao5 and ao12 for each one. Pick another session from the menu at the top. "More" holds New session, Rename, Delete session and Import from csTimer.
+
+Click a solve to open its drawer. It shows the date, penalties, the phase bar, the scramble with a cube net, a comment field, and for smart cube solves the full reconstruction with a 3D replay.
+
+Changing the event above the timer switches to your session for that event, or makes one. If the current session has no solves yet, it simply changes that session's event.
+
+## Insights
+
+Insights describes the current session, or every session of the same event with the switch at the top right. It shows your counts, best single and averages, and standard deviation. Below that:
+
+- **Progress:** every single, with a rolling ao5, ao12, ao50 or ao100 drawn over it.
+- **Where your times land:** how many solves fall in each time bucket; the highlighted bar holds your current ao12.
+- **Day by day:** the daily mean and best over your last 60 practice days.
+- Phase averages when your solves have splits, and a timeline of personal bests.
+
+## Bringing your history over from csTimer
+
+1. In csTimer, open Export and choose Export to file.
+2. In Cadence, open Settings and either click Choose file under Import from csTimer or drop the file anywhere on the Settings page.
+3. A preview lists every session in the file, how many solves each adds, and whether it tops up a session you already have or becomes a new one.
+4. Click Import. Cadence opens the biggest imported session.
+
+Solves you already have (same finish time, time and scramble) are skipped, so importing the same file twice adds nothing. A session with the same name and event as one of yours is topped up rather than duplicated, which means you can keep timing in csTimer for a while and import a fresh export now and then. A Cadence backup file imports the same way.
+
+## Backups and export
+
+Settings > Export saves either a full Cadence backup (`.json`) or a file in csTimer's format, so your solves can go back to csTimer.
+
+Settings > Delete everything removes all sessions and solves from this device. If you are signed in, it signs this device out first, so the copy in your account stays.
+
+## Sync
+
+Sign in under Settings > Sync across devices with your World Cube Association account. You don't need to have competed; any WCA website account works.
+
+Once signed in, Cadence syncs a couple of seconds after each change, when the app comes back to the foreground, when the device goes online again, and every five minutes. The account row shows when it last synced, and Sync now runs one straight away.
+
+What syncs:
+
+- sessions, solves, penalties and comments, and smart cube moves and rotations
+- settings such as theme, inspection and phases
+
+Some settings describe the device rather than you, so they stay on each device: the input (keyboard, Stackmat, smart cube), the session currently open, and Share diagnostics.
+
+When two devices change the same solve, the later change wins. If you delete a session on one device while another device has new solves in it that haven't synced yet, those solves are kept and the session comes back.
+
+Sign out keeps your solves on the device. Delete synced data erases the copy kept for syncing and signs out every device; each device keeps the solves it already has.
+
+## Installing
+
+See [Install](../README.md#install) in the README for phones, browsers and the desktop apps.
