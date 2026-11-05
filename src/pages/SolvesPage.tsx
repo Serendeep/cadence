@@ -1,9 +1,10 @@
 import { AnimatePresence, motion } from 'motion/react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { PhaseBar, phaseNames } from '../components/Bits'
+import { PhaseBar } from '../components/Bits'
+import { phaseNames } from '../lib/cfop'
 import { CubeNet, Twisty } from '../components/Cube'
 import { Menu } from '../components/Menu'
-import { removeSolveWithUndo } from '../components/Results'
+import { removeSolveWithUndo } from '../lib/solveActions'
 import { BackIcon, CloseIcon } from '../components/icons'
 import { solverFrame, timeline } from '../lib/rotations'
 import { useSessionData } from '../hooks/useSessionData'
@@ -35,7 +36,9 @@ const splitsTitle = (s: Solve) =>
 export function SolvesPage() {
   const { sessions, session, solves, values, stats } = useSessionData()
   const settings = useSettings()
-  const [shown, setShown] = useState(PAGE)
+  // how many rows to show, remembered per session so switching sessions starts again at one page
+  const [paging, setPaging] = useState({ session: session?.id, shown: PAGE })
+  const shown = paging.session === session?.id ? paging.shown : PAGE
   const [openId, setOpenId] = useState<number | null>(null)
   const [renaming, setRenaming] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -48,7 +51,6 @@ export function SolvesPage() {
   const step = useCallback((delta: number) => setOpenId((id) => solves[solves.findIndex((s) => s.id === id) + delta]?.id ?? id), [solves])
   const dec = settings.decimals
 
-  useEffect(() => setShown(PAGE), [session?.id])
   const importCs = () => (location.hash = '/settings?import')
   const newSession = () => void createSession(`Session ${sessions.length + 1}`, session?.event ?? '333').then((id) => setSettings({ sessionId: id }))
 
@@ -161,7 +163,7 @@ export function SolvesPage() {
               1–{Math.min(shown, solves.length).toLocaleString()} of {solves.length.toLocaleString()}
             </span>
             {shown < solves.length && (
-              <button type="button" className="btn" onClick={() => setShown((n) => n + PAGE)}>Show {PAGE} more</button>
+              <button type="button" className="btn" onClick={() => setPaging({ session: session?.id, shown: shown + PAGE })}>Show {PAGE} more</button>
             )}
           </div>
         </>

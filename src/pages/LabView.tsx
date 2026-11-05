@@ -49,12 +49,16 @@ export function LabView({ data, settings, scramble, scrambleError, onNewScramble
   const inspRef = useRef(inspStart)
   const caller = useRef(inspectionCaller())
   const voiceRef = useRef(settings.inspectionVoice)
+  const inspectRef = useRef(false)
   useEffect(() => {
     inspRef.current = inspStart
     voiceRef.current = settings.inspectionVoice
   })
   useEffect(() => preloadCalls(settings.inspectionVoice), [settings.inspectionVoice])
   const inspect = settings.inspection && !isBlind(data.session?.event ?? '333')
+  useEffect(() => {
+    inspectRef.current = inspect
+  })
 
   // a new scramble starts a new attempt; the physical cube is assumed solved after the last one
   useEffect(() => {
@@ -64,9 +68,6 @@ export function LabView({ data, settings, scramble, scrambleError, onNewScramble
     setReached([])
   }, [scramble, setTracker])
 
-  useEffect(() => {
-    if (tracker?.phase === 'armed' && inspect && inspStart == null) setInspStart(performance.now())
-  }, [tracker?.phase, inspect, inspStart])
 
   const onMove = useCallback(
     (m: string, at: number) => {
@@ -76,6 +77,11 @@ export function LabView({ data, settings, scramble, scrambleError, onNewScramble
       detector.current.faceTurn(m, at)
       const { tracker: next, finished } = trackMove(t, m, at)
       setTracker(next)
+      // the scramble is done: inspection starts now
+      if (t.phase !== 'armed' && next.phase === 'armed' && inspectRef.current && inspRef.current == null) {
+        inspRef.current = performance.now()
+        setInspStart(inspRef.current)
+      }
       if (t.phase !== 'solving' && next.phase === 'solving') {
         detector.current.reset()
         rotationsRef.current = []

@@ -1,6 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useMemo, useState } from 'react'
-import { PhaseBar, phaseNames, Segmented } from '../components/Bits'
+import { PhaseBar, Segmented } from '../components/Bits'
+import { phaseNames } from '../lib/cfop'
 import { Heatmap, Histogram, LineChart } from '../components/Charts'
 import { useSessionData } from '../hooks/useSessionData'
 import { db } from '../lib/db'

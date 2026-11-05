@@ -2,7 +2,7 @@ export type Voice = 'off' | 'male' | 'female'
 export const VOICES: readonly Voice[] = ['off', 'male', 'female']
 
 /** WCA judges call out 8 and 12 seconds of inspection; recordings from csTimer (GPL). */
-export const INSPECTION_CALLS = [8000, 12000] as const
+const INSPECTION_CALLS = [8000, 12000] as const
 // a call missed by more than this (tab in background) is stale; stay quiet instead of talking late
 const LATE_MS = 1000
 

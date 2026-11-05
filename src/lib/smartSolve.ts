@@ -94,6 +94,4 @@ export function trackMove(t: Tracker, move: string, at: number): { tracker: Trac
 /** Treat the physical cube as solved again, e.g. after the user resets it by hand. */
 export const resetTracker = (t: Tracker): Tracker => newTracker(t.scramble.join(' '))
 
-export const trackerFromState = (scramble: string, cube: CubeState): Tracker => newTracker(scramble, cube)
-
 export const scrambledState = (scramble: string) => applyAlg(solvedCube(), splitAlg(scramble).filter(isFaceMove).join(' '))

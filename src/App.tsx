@@ -56,9 +56,7 @@ export default function App() {
   }, [devices.error])
 
   const onFocusChange = useCallback((f: boolean) => setFocused(f), [])
-  const go = (r: Route) => {
-    location.hash = `/${r}`
-  }
+  const go = (r: Route) => location.assign(`#/${r}`)
 
   return (
     <MotionConfig reducedMotion="user">

@@ -3,6 +3,11 @@ import type { TimedMove } from './types'
 
 export const CFOP_PHASES = ['Cross', 'F2L', 'OLL', 'PLL'] as const
 
+/** Labels for n timing phases: the CFOP steps for four, numbered otherwise. */
+export function phaseNames(n: number): string[] {
+  return n === 4 ? [...CFOP_PHASES] : Array.from({ length: n }, (_, i) => `Phase ${i + 1}`)
+}
+
 export interface PhaseResult {
   /** Face the solver built the cross on */
   face: Face

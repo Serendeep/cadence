@@ -6,7 +6,7 @@ export function averageOf(values: readonly number[], n: number): number | null {
   return trimmedMean(values.slice(-n))
 }
 
-export function trimmedMean(window: readonly number[]): number {
+function trimmedMean(window: readonly number[]): number {
   const n = window.length
   const trim = Math.ceil(n * 0.05)
   const sorted = [...window].sort((a, b) => a - b)
@@ -44,14 +44,14 @@ export function mean(values: readonly number[]): number | null {
   return ok.length ? ok.reduce((a, b) => a + b, 0) / ok.length : null
 }
 
-export function stdDev(values: readonly number[]): number | null {
+function stdDev(values: readonly number[]): number | null {
   const ok = values.filter((v) => v !== DNF)
   if (ok.length < 2) return null
   const m = ok.reduce((a, b) => a + b, 0) / ok.length
   return Math.sqrt(ok.reduce((a, v) => a + (v - m) ** 2, 0) / (ok.length - 1))
 }
 
-export const AVERAGE_SIZES = [5, 12, 50, 100, 1000] as const
+const AVERAGE_SIZES = [5, 12, 50, 100, 1000] as const
 
 export interface SessionStats {
   count: number

@@ -29,3 +29,13 @@ export const EVENTS: PuzzleEvent[] = [
 export const isBlind = (id: string): boolean => id.endsWith('bf')
 
 export const eventById = (id: string): PuzzleEvent => EVENTS.find((e) => e.id === id) ?? EVENTS[0]
+
+// cubing.js puzzle ids for the 3D view; events missing here have no 3D model
+const TWISTY_PUZZLE: Record<string, string> = {
+  '222': '2x2x2', '333': '3x3x3', '333oh': '3x3x3', '333bf': '3x3x3', '333fm': '3x3x3', '444': '4x4x4', '555': '5x5x5',
+  '666': '6x6x6', '777': '7x7x7', pyram: 'pyraminx', skewb: 'skewb', minx: 'megaminx', sq1: 'square1', clock: 'clock',
+  '444bf': '4x4x4', '555bf': '5x5x5',
+}
+
+export const twistySupports = (event: string): boolean => event in TWISTY_PUZZLE
+export const twistyPuzzle = (event: string): string => TWISTY_PUZZLE[event] ?? '3x3x3'

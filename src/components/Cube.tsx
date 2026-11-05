@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { faceGrid, type CubeState, type Face } from '../lib/cube'
+import { twistyPuzzle } from '../lib/events'
 import { angleBetween, IDENTITY, slerp, type Quat } from '../lib/orientation'
 
-export const STICKER: Record<Face, string> = {
+const STICKER: Record<Face, string> = {
   U: '#f5f5f5', D: '#f4d23a', F: '#2fa84f', B: '#2f6fd6', R: '#d8343a', L: '#f08a24',
 }
 
@@ -25,12 +26,6 @@ export function CubeNet({ state, size = 12 }: { state: CubeState; size?: number 
       ))}
     </div>
   )
-}
-
-const TWISTY_PUZZLE: Record<string, string> = {
-  '222': '2x2x2', '333': '3x3x3', '333oh': '3x3x3', '333bf': '3x3x3', '333fm': '3x3x3', '444': '4x4x4', '555': '5x5x5',
-  '666': '6x6x6', '777': '7x7x7', pyram: 'pyraminx', skewb: 'skewb', minx: 'megaminx', sq1: 'square1', clock: 'clock',
-  '444bf': '4x4x4', '555bf': '5x5x5',
 }
 
 export interface TwistyHandle {
@@ -69,7 +64,7 @@ export function Twisty({ event, setup = '', alg = '', visualization = '2D', cont
     void import('cubing/twisty').then(({ TwistyPlayer }) => {
       if (disposed || !host.current) return
       const player = new TwistyPlayer({
-        puzzle: (TWISTY_PUZZLE[event] ?? '3x3x3') as never,
+        puzzle: twistyPuzzle(event) as never,
         experimentalSetupAlg: setup,
         alg,
         visualization,
@@ -120,5 +115,3 @@ export function Twisty({ event, setup = '', alg = '', visualization = '2D', cont
 
   return <div ref={host} className="twisty-host" role="img" aria-label={label} />
 }
-
-export const twistySupports = (event: string) => event in TWISTY_PUZZLE

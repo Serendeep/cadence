@@ -1,8 +1,8 @@
 import { AnimatePresence, motion } from 'motion/react'
-import { deleteSolve, addSolve, updateSolve } from '../lib/db'
+import { updateSolve } from '../lib/db'
+import { removeSolveWithUndo } from '../lib/solveActions'
 import type { SessionStats } from '../lib/stats'
 import { DNF, formatMs, solveValue } from '../lib/time'
-import { toast } from '../lib/toast'
 import type { Penalty, Solve } from '../lib/types'
 import { AnimatedTime, PhaseBar } from './Bits'
 import { TrashIcon } from './icons'
@@ -12,19 +12,6 @@ const PENALTIES: { value: Penalty; label: string }[] = [
   { value: '+2', label: '+2' },
   { value: 'dnf', label: 'DNF' },
 ]
-
-export function removeSolveWithUndo(s: Solve) {
-  if (s.id == null) return
-  void deleteSolve(s.id).then(() => {
-    toast(`Deleted ${formatMs(solveValue(s))}`, {
-      label: 'Undo',
-      run: () => {
-        const { id: _id, ...rest } = s
-        void addSolve(rest)
-      },
-    })
-  })
-}
 
 /** How the last solve compares with the current ao12 (or ao5 early in a session). */
 function Delta({ last, stats }: { last: Solve; stats: SessionStats }) {

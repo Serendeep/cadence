@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from 'react'
 import { VOICES, type Voice } from './voice'
 
-export const THEMES = ['system', 'graphite', 'nord', 'paper', 'matcha', 'mono-light'] as const
+const THEMES = ['system', 'graphite', 'nord', 'paper', 'matcha', 'mono-light'] as const
 export type ThemeName = (typeof THEMES)[number]
 export type InputMethod = 'keyboard' | 'stackmat' | 'smartcube' | 'gantimer'
 export type TimerUpdate = 'live' | 'seconds' | 'hidden'
@@ -23,7 +23,7 @@ export interface Settings {
   keepAwake: boolean
 }
 
-export const DEFAULTS: Settings = {
+const DEFAULTS: Settings = {
   theme: 'system',
   inspection: false,
   inspectionVoice: 'male',

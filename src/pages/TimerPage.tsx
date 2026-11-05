@@ -5,7 +5,7 @@ import { useSessionData, type SessionData } from '../hooks/useSessionData'
 import { addSolve, createSession, updateSession } from '../lib/db'
 import { connectCube, connectExternal, disconnectCube, disconnectExternal, useDevices, type CubeKind } from '../lib/deviceStore'
 import { bluetoothAvailable } from '../lib/devices'
-import { EVENTS, eventById, isBlind } from '../lib/events'
+import { EVENTS, eventById, isBlind, twistySupports } from '../lib/events'
 import { nextScramble } from '../lib/scramble'
 import { setSettings, useSettings, type InputMethod, type Settings } from '../lib/settings'
 import { scrambledState } from '../lib/smartSolve'
@@ -13,7 +13,7 @@ import { isFocused, type TimerResult } from '../lib/timerMachine'
 import { effective, formatMs } from '../lib/time'
 import { toast } from '../lib/toast'
 import type { InputSource, Penalty, TimedMove } from '../lib/types'
-import { CubeNet, Twisty, twistySupports } from '../components/Cube'
+import { CubeNet, Twisty } from '../components/Cube'
 import { Menu } from '../components/Menu'
 import { Results } from '../components/Results'
 import { TimerSides } from '../components/TimerSides'
@@ -46,9 +46,9 @@ export function TimerPage({ onFocusChange }: { onFocusChange: (f: boolean) => vo
   })
 
   const load = useCallback(() => {
-    setScrambleError(false)
     nextScramble(event)
       .then((text) => {
+        setScrambleError(false)
         const cur = scrambleRef.current
         if (cur && cur.event === event) history.current = [cur.text, ...history.current].slice(0, 20)
         setScramble({ text, event })
