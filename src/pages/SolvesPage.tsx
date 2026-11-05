@@ -1,4 +1,5 @@
 import { AnimatePresence, motion } from 'motion/react'
+import { useModalFocus } from '../hooks/useModalFocus'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { PhaseBar } from '../components/Bits'
 import { phaseNames } from '../lib/cfop'
@@ -212,10 +213,13 @@ export function Dialog({ title, onClose, children }: { title: string; onClose: (
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
+  const box = useModalFocus<HTMLDivElement>()
   return (
     <>
       <motion.div className="backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} />
       <motion.div
+        ref={box}
+        tabIndex={-1}
         className="dialog"
         role="dialog"
         aria-modal="true"
@@ -243,6 +247,7 @@ interface DrawerProps {
 }
 
 function SolveDrawer({ solve, index, onClose, decimals, onNewer, onOlder }: DrawerProps) {
+  const box = useModalFocus<HTMLElement>()
   const [replayFor, setReplayFor] = useState<number | null>(null)
   const replay = replayFor != null && replayFor === solve.id
   const ev = eventById(solve.event)
@@ -265,6 +270,8 @@ function SolveDrawer({ solve, index, onClose, decimals, onNewer, onOlder }: Draw
     <>
       <motion.div className="backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} />
       <motion.aside
+        ref={box}
+        tabIndex={-1}
         className="drawer"
         role="dialog"
         aria-modal="true"
