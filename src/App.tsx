@@ -11,6 +11,7 @@ import { Dialog, SolvesPage } from './pages/SolvesPage'
 import { TimerPage } from './pages/TimerPage'
 import { setSolving } from './lib/solving'
 import { useSync } from './lib/sync'
+import { checkNotices } from './lib/notices'
 
 type Route = 'timer' | 'solves' | 'insights' | 'settings'
 const ROUTES: { id: Route; label: string; icon: ReactNode }[] = [
@@ -45,6 +46,7 @@ export default function App() {
   const [focused, setFocused] = useState(false)
   useTheme(settings.theme)
   useUpdateNotice()
+  useNotices()
 
   useEffect(() => {
     const onHash = () => setRoute(readRoute())
@@ -142,6 +144,23 @@ interface DesktopBridge {
 const desktop = (window as unknown as { desktop?: DesktopBridge }).desktop
 
 const UPDATE_TOAST_MS = 60 * 60 * 1000
+
+// late enough that the install hint and a pending update speak first
+const NOTICE_DELAY_MS = 8000
+
+function useNotices() {
+  useEffect(() => {
+    const check = () => {
+      if (document.visibilityState === 'visible') void checkNotices()
+    }
+    const id = window.setTimeout(check, NOTICE_DELAY_MS)
+    document.addEventListener('visibilitychange', check)
+    return () => {
+      window.clearTimeout(id)
+      document.removeEventListener('visibilitychange', check)
+    }
+  }, [])
+}
 
 function useUpdateNotice() {
   useEffect(
