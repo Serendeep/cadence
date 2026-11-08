@@ -86,6 +86,8 @@ Solves you already have (same finish time, time and scramble) are skipped, so im
 
 Settings > Your data > Export saves either a full Cadence backup (`.json`) or a file in csTimer's format, so your solves can go back to csTimer.
 
+The desktop app also saves a backup on its own, once a day while it runs, as `cadence-backup-YYYY-MM-DD.json` in a `backups` folder inside the app's data folder. It keeps the newest seven and deletes older ones. Settings > Your data > Automatic backups > Open folder shows them, and any of these files can be imported like an exported backup. In a browser, Cadence asks for persistent storage so the browser is less likely to clear your solves, but signing in to sync or installing the app is the safer way to keep them.
+
 Settings > Your data > Delete everything removes all sessions and solves from this device. If you are signed in, it signs this device out first, so the copy in your account stays.
 
 ## Sync

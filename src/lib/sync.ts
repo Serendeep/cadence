@@ -103,6 +103,8 @@ export function useSync(): SyncState {
   )
 }
 
+export const isSignedIn = (): boolean => state.token !== null
+
 class SignedOut extends Error {}
 class StorageFull extends Error {}
 class RateLimited extends Error {}

@@ -3,6 +3,7 @@ const fs = require('node:fs')
 const path = require('node:path')
 const { pathToFileURL } = require('node:url')
 const { updateMode } = require('./updateMode.cjs')
+const { saveBackup } = require('./backups.cjs')
 
 const DIST = path.join(__dirname, '..', 'dist')
 const DEV_URL = process.env.VITE_DEV_SERVER_URL
@@ -119,6 +120,24 @@ ipcMain.handle('auth-sign-in', (e) => {
   // only the app's own page may start a sign-in, never a frame inside it
   if (e.senderFrame !== e.sender.mainFrame) return { error: 'failed' }
   return signIn(BrowserWindow.fromWebContents(e.sender))
+})
+
+const backupsDir = () => path.join(app.getPath('userData'), 'backups')
+
+ipcMain.handle('backup-save', (e, json) => {
+  if (e.senderFrame !== e.sender.mainFrame) return false
+  try {
+    return saveBackup(backupsDir(), json)
+  } catch (err) {
+    console.error('Backup failed:', err?.message ?? err)
+    return false
+  }
+})
+
+ipcMain.handle('backup-open', async (e) => {
+  if (e.senderFrame !== e.sender.mainFrame) return
+  fs.mkdirSync(backupsDir(), { recursive: true })
+  await shell.openPath(backupsDir())
 })
 
 const RELEASES_URL = 'https://github.com/Serendeep/cadence/releases/latest'

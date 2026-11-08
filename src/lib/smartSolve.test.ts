@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { invertAlg } from './cube'
-import { newTracker, scrambleHint, simplify, trackMove, type SmartFinish, type Tracker } from './smartSolve'
+import { finishSolve, newTracker, resetTracker, scrambleHint, simplify, solveOpen, trackMove, type SmartFinish, type Tracker } from './smartSolve'
 
 const feed = (t: Tracker, alg: string, start = 0, step = 100) => {
   let cur = t
@@ -50,5 +50,28 @@ describe('smart cube tracker', () => {
 
   it('simplifies move sequences', () => {
     expect(simplify(['R', 'R', 'U', "U'", 'F', 'F', 'F'])).toEqual(['R2', "F'"])
+  })
+})
+
+describe('resync', () => {
+  const scr = "R U F2 L' D"
+  const solving = () => feed(feed(newTracker(scr), scr).t, "D' L F2", 1000, 250).t
+
+  it('finishes an open solve at the last move received and takes the cube as solved', () => {
+    const { tracker, finished } = finishSolve(solving())
+    expect(finished).toMatchObject({ time: 500, moves: [{ m: "D'" }, { m: 'L' }, { m: 'F2' }] })
+    expect(solveOpen(tracker)).toBe(false)
+    expect(newTracker(scr, tracker.cube).progress).toBe(0)
+  })
+
+  it('does not finish when no solve is open', () => {
+    expect(finishSolve(newTracker(scr)).finished).toBeUndefined()
+    const done = feed(feed(newTracker(scr), scr).t, invertAlg(scr)).t
+    expect(finishSolve(done).finished).toBeUndefined()
+  })
+
+  it('mark solved drops a desynced state and starts the scramble over', () => {
+    const lost = feed(newTracker(scr), "R B' D2").t
+    expect(resetTracker(lost)).toMatchObject({ phase: 'scrambling', progress: 0, deviation: [] })
   })
 })
