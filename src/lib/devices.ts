@@ -22,9 +22,10 @@ export interface SmartCubeConnection {
 
 export const bluetoothAvailable = () => typeof navigator !== 'undefined' && 'bluetooth' in navigator
 
-export async function connectGan(h: SmartCubeHandlers): Promise<SmartCubeConnection> {
+export async function connectGan(h: SmartCubeHandlers, device?: BluetoothDevice): Promise<SmartCubeConnection> {
   const { connectGanCube } = await import('gan-web-bluetooth')
-  const conn = await connectGanCube()
+  // our fork reconnects to a known device without the chooser; it remembers the MAC it learned the first time
+  const conn = await connectGanCube(undefined, device)
   const sub = conn.events$.subscribe((ev) => {
     if (ev.type === 'MOVE') h.onMove(ev.move, ev.localTimestamp ?? performance.now())
     else if (ev.type === 'BATTERY') h.onBattery?.(ev.batteryLevel)
@@ -34,6 +35,7 @@ export async function connectGan(h: SmartCubeHandlers): Promise<SmartCubeConnect
   conn.sendCubeCommand({ type: 'REQUEST_BATTERY' }).catch(() => undefined)
   return {
     name: conn.deviceName,
+    device: conn.device,
     markSolved: () => void conn.sendCubeCommand({ type: 'REQUEST_RESET' }).catch(() => undefined),
     disconnect: () => {
       sub.unsubscribe()

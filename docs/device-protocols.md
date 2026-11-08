@@ -22,7 +22,7 @@ Notes on the wire formats Cadence speaks, for anyone fixing or adding a driver. 
 
 ## GAN smart cubes
 
-`src/lib/devices.ts`, through [gan-web-bluetooth](https://github.com/afedotov/gan-web-bluetooth), which handles Gen 2, 3 and 4 encryption. Gyroscope readings arrive in the cube's own axes and are mapped to the screen as (x, z, −y) in `orientation.ts`.
+`src/lib/devices.ts`, through [gan-web-bluetooth](https://github.com/afedotov/gan-web-bluetooth), which handles Gen 2, 3 and 4 encryption. Cadence uses [a fork](https://github.com/Serendeep/gan-web-bluetooth/tree/reconnect) (tag `v3.0.2-cadence.1`) that adds one thing: `connectGanCube(provider, device)` reconnects to a device from an earlier connection without the chooser, so a dropped cube can come back on its own. Gyroscope readings arrive in the cube's own axes and are mapped to the screen as (x, z, −y) in `orientation.ts`.
 
 ## Other smart cubes
 

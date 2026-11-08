@@ -119,7 +119,7 @@ async function openCube(kind: CubeKind, gen: number, device?: BluetoothDevice): 
       if (gen === cubeGen) void cubeDropped(kind)
     },
   }
-  if (kind === 'gan') return connectGan(handlers)
+  if (kind === 'gan') return connectGan(handlers, device)
   if (kind === 'other') return connectOtherCube(handlers)
   const moyu = await import('./moyu')
   return kind === 'moyu32' ? moyu.connectMoyu32(handlers, askMac, device) : moyu.connectMoyuClassic(handlers, device)
