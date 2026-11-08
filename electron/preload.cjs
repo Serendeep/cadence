@@ -21,4 +21,10 @@ contextBridge.exposeInMainWorld('desktop', {
   signIn() {
     return ipcRenderer.invoke('auth-sign-in')
   },
+  saveBackup(json) {
+    return ipcRenderer.invoke('backup-save', json)
+  },
+  openBackups() {
+    return ipcRenderer.invoke('backup-open')
+  },
 })

@@ -60,6 +60,7 @@
       "electron/main.cjs",
       "electron/preload.cjs",
       "electron/updateMode.cjs",
+      "electron/backups.cjs",
       "package.json"
     ],
     "directories": {
