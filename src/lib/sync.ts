@@ -388,7 +388,7 @@ function readRedirect(): void {
   const token = params.get('auth')
   const failure = params.get('auth-error')
   if (!token && !failure) return
-  history.replaceState(null, '', `${location.pathname}#/settings`)
+  history.replaceState(null, '', `${location.pathname}#/settings/account`)
   if (failure) toast(SIGN_IN_ERRORS[failure] ?? SIGN_IN_ERRORS.failed)
   else if (takePendingSignIn(params.get('nonce'))) void finishSignIn(token!)
   else toast('That sign-in link was not started on this device, so it was ignored.')

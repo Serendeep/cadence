@@ -377,8 +377,6 @@ textarea { width: 100%; resize: vertical; min-height: 72px; }
 .swatch[aria-pressed='true'] span { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--fg); }
 @media (max-width: 720px) { .setting { grid-template-columns: 1fr; } }
 /* section labels on the Settings page; the first row under each keeps no top rule */
-.setting-group { margin: 40px 0 0; font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--dim); }
-.setting-group + .setting, .setting-group + * > .setting:first-child { border-top: none; }
 
 /* toast */
 .toast-wrap { position: fixed; left: 0; right: 0; bottom: 28px; z-index: 50; display: flex; justify-content: center; padding: 0 16px; pointer-events: none; }
@@ -434,3 +432,24 @@ body:has(.toast) .coach-card { bottom: 96px; }
 .typed-input.bad { border-bottom-color: var(--bad); }
 .typed-help { margin: 14px 0 0; color: var(--faint); font-size: 14px; }
 .typed-help.bad { color: var(--bad); }
+
+.settings-layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 48px; align-items: start; margin-top: 8px; }
+.settings-nav { position: sticky; top: 24px; display: flex; flex-direction: column; gap: 2px; }
+.settings-nav a { position: relative; display: block; padding: 9px 14px; border-radius: 10px; text-decoration: none; }
+.settings-nav a b { display: block; font-size: 15px; font-weight: 500; color: var(--fg); }
+.settings-nav a small { display: block; font-size: 12px; color: var(--faint); }
+.settings-nav a:hover, .settings-nav a[aria-current] { background: var(--surface); }
+.settings-nav a[aria-current] b { font-weight: 600; }
+.settings-body > h2 { font-size: 22px; font-weight: 600; margin: 4px 0 6px; letter-spacing: -0.01em; outline: none; }
+.settings-body > h2 + .setting { border-top: none; }
+.settings-back { display: none; }
+@media (max-width: 720px) {
+  .settings-layout { grid-template-columns: 1fr; gap: 0; }
+  .settings.at-list .settings-body, .settings.in-section .settings-nav, .settings.in-section .pagehead { display: none; }
+  .settings-nav { position: static; gap: 0; }
+  .settings-nav a { padding: 14px 28px 14px 2px; border-radius: 0; border-top: 1px solid var(--line); }
+  .settings-nav a:hover, .settings-nav a[aria-current] { background: none; }
+  .settings-nav a[aria-current] b { font-weight: 500; }
+  .settings-nav a::after { content: '›'; position: absolute; right: 6px; top: 50%; transform: translateY(-50%); font-size: 22px; color: var(--faint); }
+  .settings-back { display: inline-flex; align-items: center; min-height: 44px; color: var(--dim); text-decoration: none; font-size: 15px; }
+}

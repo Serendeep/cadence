@@ -30,7 +30,7 @@ Turn on Inspection in Settings, or tap "inspection off" above the scramble. Pres
 
 ### Phases
 
-Settings > Phases splits a solve into up to eight parts. With four phases they are named Cross, F2L, OLL and PLL; tap space at the end of each one and the last tap stops the timer. A bar under the time shows how long each phase took. Smart cubes detect the CFOP phases on their own, so you don't need to tap.
+Settings > Timing > Phases splits a solve into up to eight parts. With four phases they are named Cross, F2L, OLL and PLL; tap space at the end of each one and the last tap stops the timer. A bar under the time shows how long each phase took. Smart cubes detect the CFOP phases on their own, so you don't need to tap.
 
 ### Other timing settings
 
@@ -82,13 +82,13 @@ Solves you already have (same finish time, time and scramble) are skipped, so im
 
 ## Backups and export
 
-Settings > Export saves either a full Cadence backup (`.json`) or a file in csTimer's format, so your solves can go back to csTimer.
+Settings > Your data > Export saves either a full Cadence backup (`.json`) or a file in csTimer's format, so your solves can go back to csTimer.
 
-Settings > Delete everything removes all sessions and solves from this device. If you are signed in, it signs this device out first, so the copy in your account stays.
+Settings > Your data > Delete everything removes all sessions and solves from this device. If you are signed in, it signs this device out first, so the copy in your account stays.
 
 ## Sync
 
-Sign in under Settings > Sync across devices with your World Cube Association account. You don't need to have competed; any WCA website account works.
+Sign in under Settings > Account with your World Cube Association account. You don't need to have competed; any WCA website account works.
 
 Once signed in, Cadence syncs a couple of seconds after each change, when the app comes back to the foreground, when the device goes online again, and every five minutes. The account row shows when it last synced, and Sync now runs one straight away.
 
