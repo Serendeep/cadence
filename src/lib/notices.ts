@@ -23,13 +23,13 @@ const NUDGES: Nudge[] = [
   {
     id: 'star',
     ready: async (solves, days) => solves >= STAR_SOLVES && (await days()) >= STAR_DAYS,
-    message: 'Enjoying Cadence? A star on GitHub helps other cubers find it.',
+    message: 'Like Cadence? A GitHub star helps other cubers find it.',
     action: { label: 'Star', run: () => window.open(REPO_URL, '_blank', 'noopener') },
   },
   {
     id: 'share',
     ready: async (solves) => solves >= SHARE_SOLVES,
-    message: 'Know a cuber who would like Cadence? Send them a link.',
+    message: 'Know a cuber who would like Cadence?',
     action: { label: 'Share', run: () => void shareCadence() },
   },
 ]
@@ -52,7 +52,7 @@ function write(key: string, value: string): void {
 
 /** Opens the system share sheet, or copies the link where there is none. */
 export async function shareCadence(): Promise<void> {
-  const data = { title: 'Cadence', text: 'A free speedcubing timer that tells you what to practise.', url: SITE_URL }
+  const data = { title: 'Cadence', text: 'A free speedcubing timer.', url: SITE_URL }
   if (navigator.share) {
     // closing the sheet rejects too; nothing to report then
     await navigator.share(data).catch(() => undefined)
@@ -79,7 +79,7 @@ export async function checkNotices(): Promise<void> {
   const seen = read(VERSION_KEY)
   write(VERSION_KEY, __APP_VERSION__)
   if (isUpdate(seen, __APP_VERSION__, solves > 0)) {
-    whenNotSolving(() => toast(`Updated to ${__APP_VERSION__}`, { label: "What's new", run: () => location.assign('#/settings?whats-new') }, NOTICE_TOAST_MS))
+    whenNotSolving(() => toast(`Updated to ${__APP_VERSION__}`, { label: "What's new", run: () => location.assign('#/settings/about?whats-new') }, NOTICE_TOAST_MS))
     return
   }
   const done = (read(SHOWN_KEY) ?? '').split(',').filter(Boolean)

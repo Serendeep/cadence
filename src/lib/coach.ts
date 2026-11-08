@@ -86,7 +86,7 @@ function phaseFindings(solves: readonly Solve[]): Finding[] {
     return [{
       kind: `phase-${i}` as FindingKind,
       title: `${CFOP_PHASES[i]} is ${sec(gain)} slower than at your best`,
-      detail: `Over your last ${PHASE_WINDOW} solves with splits, ${CFOP_PHASES[i]} averages ${sec(m)}. In your best stretch of ${PHASE_WINDOW} it took ${sec(then[i])}.`,
+      detail: `${sec(m)} over your last ${PHASE_WINDOW} solves, against ${sec(then[i])} in your best stretch.`,
       gain,
       metric: m,
       evidence: split.length,
@@ -108,7 +108,7 @@ function consistencyFinding(solves: readonly Solve[]): Finding[] {
   return [{
     kind: 'consistency',
     title: `Slow solves cost you ${sec(cost)} a solve`,
-    detail: `${blowups} of your last ${values.length} solves took over ${sec(cap)}, more than 20% above your median. Without them your mean would be ${sec(cost)} lower.`,
+    detail: `${blowups} of your last ${values.length} solves took over ${sec(cap)}, 20% above your median.`,
     gain: cost,
     metric: cost,
     evidence: values.length,
@@ -166,7 +166,7 @@ function sittingFindings(solves: readonly Solve[]): Finding[] {
     out.push({
       kind: 'warmup',
       title: `Your first ${WARMUP_SOLVES} solves are ${sec(warm.excess)} slower`,
-      detail: `Across your last ${warm.count} sittings, the first ${WARMUP_SOLVES} solves average ${sec(warm.excess)} above the rest of the sitting. At a competition, those are the solves that count.`,
+      detail: `Compared with the rest of each sitting, over your last ${warm.count} sittings.`,
       gain: warm.gain,
       metric: warm.excess,
       evidence: warm.count,
@@ -177,7 +177,7 @@ function sittingFindings(solves: readonly Solve[]): Finding[] {
     out.push({
       kind: 'fatigue',
       title: `You slow down by ${sec(tired.excess)} late in long sittings`,
-      detail: `In your last ${tired.count} sittings of ${MIN_FATIGUE_SITTING} solves or more, the final ${FATIGUE_SOLVES} average ${sec(tired.excess)} above the middle of the sitting.`,
+      detail: `Your last ${FATIGUE_SOLVES} solves against the middle of the sitting, over your last ${tired.count} sittings of ${MIN_FATIGUE_SITTING}+.`,
       gain: tired.gain,
       metric: tired.excess,
       evidence: tired.count,

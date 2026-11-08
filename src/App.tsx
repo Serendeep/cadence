@@ -22,7 +22,7 @@ const ROUTES: { id: Route; label: string; icon: ReactNode }[] = [
 ]
 
 const readRoute = (): Route => {
-  const r = location.hash.replace('#/', '').split('?')[0] as Route
+  const r = location.hash.replace('#/', '').split(/[/?]/)[0] as Route
   return ROUTES.some((x) => x.id === r) ? r : 'timer'
 }
 

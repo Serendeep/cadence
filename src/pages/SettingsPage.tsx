@@ -112,7 +112,7 @@ function AccountRow() {
   )
   if (!sync.token) {
     return (
-      <Row id="account" title="Sync across devices" desc="Sign in with your World Cube Association account to keep your sessions, solves and settings the same on your phone, tablet and computer. Optional: without it, everything stays on this device.">
+      <Row id="account" title="Sync across devices" desc="Sign in with your WCA account to sync sessions, solves and settings. Without it, everything stays on this device.">
         <button type="button" className="btn primary" onClick={() => void signIn()}>Sign in with WCA</button>
         {switchDialog}
       </Row>
@@ -172,8 +172,48 @@ function Row({ title, desc, children, id }: { title: string; desc?: string; chil
   )
 }
 
+const SECTIONS = [
+  { id: 'account', label: 'Account', hint: 'Sign in and sync' },
+  { id: 'appearance', label: 'Appearance', hint: 'Theme' },
+  { id: 'timing', label: 'Timing', hint: 'Inspection, hold, phases' },
+  { id: 'coach', label: 'Coach', hint: 'Findings and drills' },
+  { id: 'devices', label: 'Devices', hint: 'Timers and smart cubes' },
+  { id: 'data', label: 'Your data', hint: 'Import, export, delete' },
+  { id: 'about', label: 'About', hint: "Version and what's new" },
+] as const
+type SectionId = (typeof SECTIONS)[number]['id']
+
+// older links name a setting rather than a section
+const LEGACY: [string, SectionId][] = [['?import', 'data'], ['?devices', 'devices'], ['?whats-new', 'about'], ['?auth', 'account']]
+
+/** The section in the address (#/settings/timing), or null for the list, which phones show on its own. */
+function readSection(): SectionId | null {
+  const id = /^#\/settings\/([a-z]+)/.exec(location.hash)?.[1]
+  const named = SECTIONS.find((x) => x.id === id)?.id
+  return named ?? LEGACY.find(([q]) => location.hash.includes(q))?.[1] ?? null
+}
+
+function useSection(): SectionId | null {
+  const [section, setSection] = useState(readSection)
+  useEffect(() => {
+    const onHash = () => setSection(readSection())
+    window.addEventListener('hashchange', onHash)
+    return () => window.removeEventListener('hashchange', onHash)
+  }, [])
+  return section
+}
+
 export function SettingsPage() {
   const s = useSettings()
+  const section = useSection()
+  const active: SectionId = section ?? 'account'
+  const heading = useRef<HTMLHeadingElement>(null)
+  // moves focus (and the view) to the section that just opened; not on first load, where the page title leads
+  const opened = useRef(false)
+  useEffect(() => {
+    if (opened.current) heading.current?.focus()
+    opened.current = true
+  }, [section])
   const devices = useDevices()
   const file = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState(false)
@@ -223,7 +263,7 @@ export function SettingsPage() {
 
   return (
     <div
-      className={`page ${dragging ? 'dropping' : ''}`}
+      className={`page settings ${section ? 'in-section' : 'at-list'} ${dragging ? 'dropping' : ''}`}
       style={{ maxWidth: 1100 }}
       onDragOver={(e) => {
         if (![...e.dataTransfer.types].includes('Files')) return
@@ -241,175 +281,205 @@ export function SettingsPage() {
       <div className="pagehead">
         <div>
           <h1>Settings</h1>
-          <p>Saved on this device as you change them, and synced when you sign in.</p>
         </div>
       </div>
 
-      <h2 className="setting-group">Account</h2>
-      <AccountRow />
+      <div className="settings-layout">
+        <nav className="settings-nav" aria-label="Settings sections">
+          {SECTIONS.map((x) => (
+            <a key={x.id} href={`#/settings/${x.id}`} aria-current={active === x.id ? 'page' : undefined}>
+              <b>{x.label}</b>
+              <small>{x.hint}</small>
+            </a>
+          ))}
+        </nav>
+        <div className="settings-body">
+          <a className="settings-back" href="#/settings">‹ Settings</a>
+          <h2 ref={heading} tabIndex={-1}>{SECTIONS.find((x) => x.id === active)!.label}</h2>
+          {active === 'account' && (
+            <>
+          <AccountRow />
 
-      {canInstall && (
-        <Row title="Install the app" desc="Adds Cadence to your home screen or app list. It opens in its own window and works offline.">
-          <button type="button" className="btn primary" onClick={() => void installApp()}>Install</button>
-        </Row>
-      )}
-
-      <h2 className="setting-group">Appearance</h2>
-      <Row title="Theme" desc="System follows your OS: paper in light mode, graphite in dark.">
-        <button type="button" className="swatch" aria-pressed={s.theme === 'system'} onClick={() => setSettings({ theme: 'system' })}>
-          <span style={{ background: 'linear-gradient(90deg, #f2f1ee 50%, #141416 50%)', padding: '8px 10px', fontSize: 18, fontWeight: 500 }}>
-            <em className="split-sample">12.84</em>
-          </span>
-          system
-        </button>
-        {(Object.keys(THEME_SWATCH) as (keyof typeof THEME_SWATCH)[]).map((t) => {
-          const [bg, fg, acc] = THEME_SWATCH[t]
-          return (
-            <button key={t} type="button" className="swatch" aria-pressed={s.theme === t} onClick={() => setSettings({ theme: t })}>
-              <span style={{ background: bg, color: fg, padding: '8px 10px', fontSize: 18, fontWeight: 500 }}>
-                12.84
-                <i style={{ background: acc }} />
+          {canInstall && (
+            <Row title="Install the app" desc="Opens in its own window and works offline.">
+              <button type="button" className="btn primary" onClick={() => void installApp()}>Install</button>
+            </Row>
+          )}
+            </>
+          )}
+          {active === 'appearance' && (
+            <>
+          <Row title="Theme" desc="System uses paper in light mode and graphite in dark.">
+            <button type="button" className="swatch" aria-pressed={s.theme === 'system'} onClick={() => setSettings({ theme: 'system' })}>
+              <span style={{ background: 'linear-gradient(90deg, #f2f1ee 50%, #141416 50%)', padding: '8px 10px', fontSize: 18, fontWeight: 500 }}>
+                <em className="split-sample">12.84</em>
               </span>
-              {t.replace('-', ' ')}
+              system
             </button>
-          )
-        })}
-      </Row>
+            {(Object.keys(THEME_SWATCH) as (keyof typeof THEME_SWATCH)[]).map((t) => {
+              const [bg, fg, acc] = THEME_SWATCH[t]
+              return (
+                <button key={t} type="button" className="swatch" aria-pressed={s.theme === t} onClick={() => setSettings({ theme: t })}>
+                  <span style={{ background: bg, color: fg, padding: '8px 10px', fontSize: 18, fontWeight: 500 }}>
+                    12.84
+                    <i style={{ background: acc }} />
+                  </span>
+                  {t.replace('-', ' ')}
+                </button>
+              )
+            })}
+          </Row>
+            </>
+          )}
+          {active === 'timing' && (
+            <>
+          <Row title="Inspection" desc="15 seconds. +2 after 15 s, DNF after 17 s. Off for blindfolded events.">
+            <Switch label="Inspection" checked={s.inspection} onChange={(v) => setSettings({ inspection: v })} />
+          </Row>
 
-      <h2 className="setting-group">Timing</h2>
-      <Row title="Inspection" desc="WCA 15 seconds. Starting after 15 s adds +2, after 17 s is a DNF. Blindfolded events skip it.">
-        <Switch label="Inspection" checked={s.inspection} onChange={(v) => setSettings({ inspection: v })} />
-        <span className="dim" style={{ fontSize: 14, marginLeft: 12 }}>Call out 8 s and 12 s</span>
-        <Segmented
-          id="voice"
-          label="Inspection voice"
-          value={s.inspectionVoice}
-          onChange={(v) => {
-            setSettings({ inspectionVoice: v })
-            playCall(v, 8000)
-          }}
-          options={VOICES.map((v) => ({ value: v, label: v }))}
-        />
-      </Row>
+          <Row title="Inspection calls" desc="Calls out 8 s and 12 s.">
+            <Segmented
+              id="voice"
+              label="Inspection voice"
+              value={s.inspectionVoice}
+              onChange={(v) => {
+                setSettings({ inspectionVoice: v })
+                playCall(v, 8000)
+              }}
+              options={VOICES.map((v) => ({ value: v, label: v }))}
+            />
+          </Row>
 
-      <Row title="Keep the screen on" desc="Stops the screen from dimming or locking while Cadence is open, so it is ready between solves.">
-        <Switch label="Keep the screen on" checked={s.keepAwake} onChange={(v) => setSettings({ keepAwake: v })} />
-      </Row>
+          <Row title="Keep the screen on">
+            <Switch label="Keep the screen on" checked={s.keepAwake} onChange={(v) => setSettings({ keepAwake: v })} />
+          </Row>
 
-      <Row title="Hold to start" desc="How long space or a touch must be held before the time turns green.">
-        <Segmented
-          id="hold"
-          label="Hold time"
-          value={s.holdMs}
-          onChange={(v) => setSettings({ holdMs: v })}
-          options={[0, 300, 550, 1000].map((v) => ({ value: v, label: v ? `${v / 1000} s` : 'instant' }))}
-        />
-      </Row>
+          <Row title="Hold to start" desc="How long to hold before the time turns green.">
+            <Segmented
+              id="hold"
+              label="Hold time"
+              value={s.holdMs}
+              onChange={(v) => setSettings({ holdMs: v })}
+              options={[0, 300, 550, 1000].map((v) => ({ value: v, label: v ? `${v / 1000} s` : 'instant' }))}
+            />
+          </Row>
 
-      <Row title="While solving" desc="Hide the running time if watching it distracts you.">
-        <Segmented
-          id="upd"
-          label="Timer display while solving"
-          value={s.timerUpdate}
-          onChange={(v) => setSettings({ timerUpdate: v })}
-          options={[
-            { value: 'live', label: 'live' },
-            { value: 'seconds', label: 'seconds' },
-            { value: 'hidden', label: 'hidden' },
-          ]}
-        />
-      </Row>
+          <Row title="While solving" desc="Hide the running time if it distracts you.">
+            <Segmented
+              id="upd"
+              label="Timer display while solving"
+              value={s.timerUpdate}
+              onChange={(v) => setSettings({ timerUpdate: v })}
+              options={[
+                { value: 'live', label: 'live' },
+                { value: 'seconds', label: 'seconds' },
+                { value: 'hidden', label: 'hidden' },
+              ]}
+            />
+          </Row>
 
-      <Row title="Phases" desc="Tap space at the end of each phase; the last tap stops. Four phases are labelled cross, F2L, OLL and PLL.">
-        <Segmented
-          id="phases"
-          label="Phases"
-          value={s.phases}
-          onChange={(v) => setSettings({ phases: v })}
-          options={[1, 2, 3, 4].map((v) => ({ value: v, label: v === 1 ? 'off' : String(v) }))}
-        />
-      </Row>
+          <Row title="Phases" desc="Tap space to end each phase. Four phases are cross, F2L, OLL and PLL.">
+            <Segmented
+              id="phases"
+              label="Phases"
+              value={s.phases}
+              onChange={(v) => setSettings({ phases: v })}
+              options={[1, 2, 3, 4].map((v) => ({ value: v, label: v === 1 ? 'off' : String(v) }))}
+            />
+          </Row>
 
-      <Row title="Precision and preview">
-        <Segmented id="dec" label="Decimals" value={s.decimals} onChange={(v) => setSettings({ decimals: v })} options={[{ value: 2, label: '0.01' }, { value: 3, label: '0.001' }]} />
-        <span className="dim" style={{ fontSize: 14, marginLeft: 12 }}>Scramble preview</span>
-        <Switch label="Scramble preview" checked={s.scramblePreview} onChange={(v) => setSettings({ scramblePreview: v })} />
-      </Row>
+          <Row title="Decimals">
+            <Segmented id="dec" label="Decimals" value={s.decimals} onChange={(v) => setSettings({ decimals: v })} options={[{ value: 2, label: '0.01' }, { value: 3, label: '0.001' }]} />
+          </Row>
 
-      <h2 className="setting-group">Coach</h2>
-      <Row title="Coach" desc="After a 10-minute break, sums up the sitting you just finished. In Insights, names what costs you the most time and suggests a drill for it. Off by default, so the timer stays plain.">
-        <Switch label="Coach" checked={s.coach} onChange={(v) => setSettings({ coach: v })} />
-      </Row>
+          <Row title="Scramble preview">
+            <Switch label="Scramble preview" checked={s.scramblePreview} onChange={(v) => setSettings({ scramblePreview: v })} />
+          </Row>
+            </>
+          )}
+          {active === 'coach' && (
+            <>
+          <Row title="Coach" desc="Finds what costs you the most time and suggests a drill. Sums up each sitting after a 10-minute break.">
+            <Switch label="Coach" checked={s.coach} onChange={(v) => setSettings({ coach: v })} />
+          </Row>
+            </>
+          )}
+          {active === 'devices' && (
+            <>
+          <Row
+            id="devices"
+            title="Timers and smart cubes"
+            desc={
+              bt
+                ? devices.cube
+                  ? `Connected: ${devices.cube.name}${devices.cube.battery != null ? `, ${devices.cube.battery}%` : ''}.`
+                  : devices.external
+                    ? `Connected: ${devices.external.name}.`
+                    : devices.connecting
+                      ? `Connecting the ${devices.connecting}…`
+                      : 'Nothing connected.'
+                : 'Bluetooth needs Chrome, Edge or the desktop app. The Stackmat works everywhere.'
+            }
+          >
+            <ScrollHere when={location.hash.endsWith('?devices')} />
+            <button type="button" className="btn" onClick={() => { disconnectCube(); setSettings({ input: 'stackmat' }); void connectExternal('stackmat') }}>Stackmat</button>
+            {bt && (
+              <>
+                <button type="button" className="btn" onClick={() => { disconnectCube(); setSettings({ input: 'gantimer' }); void connectExternal('gantimer') }}>GAN timer</button>
+                <button type="button" className="btn" onClick={() => cube('gan')}>GAN cube</button>
+                <button type="button" className="btn" onClick={() => cube('moyu32')}>MoYu V10 AI / MoYu32</button>
+                <button type="button" className="btn" onClick={() => cube('moyu')}>MoYu WeiLong AI</button>
+                <button type="button" className="btn" onClick={() => cube('other')}>GiiKER, GoCube, QiYi, HeyKube</button>
+              </>
+            )}
+            {(devices.cube || devices.external) && (
+              <button type="button" className="btn danger" onClick={() => { disconnectCube(); disconnectExternal(); setSettings({ input: 'keyboard' }) }}>
+                Disconnect
+              </button>
+            )}
+          </Row>
 
-      <h2 className="setting-group">Devices</h2>
-      <Row
-        id="devices"
-        title="Timers and smart cubes"
-        desc={
-          bt
-            ? devices.cube
-              ? `Connected: ${devices.cube.name}${devices.cube.battery != null ? `, ${devices.cube.battery}%` : ''}.`
-              : devices.external
-                ? `Connected: ${devices.external.name}.`
-                : devices.connecting
-                  ? `Connecting the ${devices.connecting}…`
-                  : 'Nothing connected. The keyboard and touch always work.'
-            : 'Bluetooth is not available in this browser. Use the desktop app, or Chrome or Edge. The Stackmat works everywhere.'
-        }
-      >
-        <ScrollHere when={location.hash.endsWith('?devices')} />
-        <button type="button" className="btn" onClick={() => { disconnectCube(); setSettings({ input: 'stackmat' }); void connectExternal('stackmat') }}>Stackmat</button>
-        {bt && (
-          <>
-            <button type="button" className="btn" onClick={() => { disconnectCube(); setSettings({ input: 'gantimer' }); void connectExternal('gantimer') }}>GAN timer</button>
-            <button type="button" className="btn" onClick={() => cube('gan')}>GAN cube</button>
-            <button type="button" className="btn" onClick={() => cube('moyu32')}>MoYu V10 AI / MoYu32</button>
-            <button type="button" className="btn" onClick={() => cube('moyu')}>MoYu WeiLong AI</button>
-            <button type="button" className="btn" onClick={() => cube('other')}>GiiKER, GoCube, QiYi, HeyKube</button>
-          </>
-        )}
-        {(devices.cube || devices.external) && (
-          <button type="button" className="btn danger" onClick={() => { disconnectCube(); disconnectExternal(); setSettings({ input: 'keyboard' }) }}>
-            Disconnect
-          </button>
-        )}
-      </Row>
+          <Row title="Track cube rotations" desc="On gyroscope cubes, the on-screen cube turns with yours. Takes effect on the next connect.">
+            <Switch label="Track cube rotations" checked={s.trackRotations} onChange={(v) => setSettings({ trackRotations: v })} />
+          </Row>
+            </>
+          )}
+          {active === 'data' && (
+            <>
+          <Row id="import" title="Import from csTimer" desc="A csTimer export or a Cadence backup. Drop it here or pick the file. You see a preview first, and solves you already have are skipped.">
+            <ScrollHere when={location.hash.endsWith('?import')} />
+            <input ref={file} type="file" accept=".json,.txt,application/json,text/plain" className="visually-hidden" id="import-file" onChange={(e) => e.target.files?.[0] && void onImport(e.target.files[0])} />
+            <button type="button" className="btn primary" disabled={busy} onClick={() => file.current?.click()}>
+              {busy ? 'Importing…' : 'Choose file'}
+            </button>
+          </Row>
 
-      <Row title="Track cube rotations" desc="Smart cubes with a gyroscope (MoYu V10 AI, some GAN cubes) turn the on-screen cube with yours. Uses a little more of the cube's battery. Applies the next time the cube connects.">
-        <Switch label="Track cube rotations" checked={s.trackRotations} onChange={(v) => setSettings({ trackRotations: v })} />
-      </Row>
+          <Row title="Export" desc="A Cadence backup, or a file for csTimer.">
+            <button type="button" className="btn" onClick={() => void exportAll('backup')}>Backup (.json)</button>
+            <button type="button" className="btn" onClick={() => void exportAll('cstimer')}>csTimer format</button>
+          </Row>
 
-      <h2 className="setting-group">Your data</h2>
-      <Row id="import" title="Import from csTimer" desc="In csTimer open Export, choose Export to file, then pick that file here or drop it anywhere on this page. A Cadence backup works too. You see what is in it before anything is added. Solves you already have are skipped, and sessions with the same name are topped up.">
-        <ScrollHere when={location.hash.endsWith('?import')} />
-        <input ref={file} type="file" accept=".json,.txt,application/json,text/plain" className="visually-hidden" id="import-file" onChange={(e) => e.target.files?.[0] && void onImport(e.target.files[0])} />
-        <button type="button" className="btn primary" disabled={busy} onClick={() => file.current?.click()}>
-          {busy ? 'Importing…' : 'Choose file'}
-        </button>
-      </Row>
+          <Row title="Delete everything" desc="Removes sessions and solves from this device and signs it out. Your synced copy stays.">
+            <button type="button" className="btn danger" onClick={() => setConfirmClear(true)}>Delete all data</button>
+          </Row>
 
-      <Row title="Export" desc="A full backup of every session, or a file csTimer can import.">
-        <button type="button" className="btn" onClick={() => void exportAll('backup')}>Backup (.json)</button>
-        <button type="button" className="btn" onClick={() => void exportAll('cstimer')}>csTimer format</button>
-      </Row>
-
-      <Row title="Delete everything" desc="Removes all sessions and solves from this device and signs it out of sync, so your account keeps its copy. Settings stay.">
-        <button type="button" className="btn danger" onClick={() => setConfirmClear(true)}>Delete all data</button>
-      </Row>
-
-      <Row title="Share diagnostics" desc="Off unless you turn it on. When on, Cadence sends device connection steps and error messages to help fix bugs with your timer or cube. It never sends your solves, times or name.">
-        <Switch label="Share diagnostics" checked={s.shareDiagnostics} onChange={(v) => setSettings({ shareDiagnostics: v })} />
-      </Row>
-
-      <Row title={`About Cadence ${__APP_VERSION__}`} desc="Free software under the GNU GPL v3 or later. If Cadence helps your solving, a star, a share or a coffee all help it grow.">
-        <p className="dim" style={{ fontSize: 14, margin: 0, maxWidth: 560 }}>
-          Scrambles and 3D cubes by cubing.js. GAN Bluetooth by gan-web-bluetooth. MoYu and GAN timer drivers, the Stackmat protocol and the inspection voices are adapted from csTimer by Shuang Chen.
-        </p>
-        <WhatsNew />
-        <a className="btn" href={REPO_URL} target="_blank" rel="noreferrer">Star on GitHub</a>
-        <button type="button" className="btn" onClick={() => void shareCadence()}>Share</button>
-        <a className="btn" href="https://buymeacoffee.com/serendeep" target="_blank" rel="noreferrer">Buy me a coffee</a>
-      </Row>
+          <Row title="Share diagnostics" desc="Sends device connection logs and errors to help fix bugs. Never your solves, times or name.">
+            <Switch label="Share diagnostics" checked={s.shareDiagnostics} onChange={(v) => setSettings({ shareDiagnostics: v })} />
+          </Row>
+            </>
+          )}
+          {active === 'about' && (
+            <>
+          <Row title={`Cadence ${__APP_VERSION__}`} desc="Free software, GPL v3 or later. Uses cubing.js and gan-web-bluetooth. Device drivers and voices adapted from csTimer by Shuang Chen.">
+            <WhatsNew />
+            <a className="btn" href={REPO_URL} target="_blank" rel="noreferrer">Star on GitHub</a>
+            <button type="button" className="btn" onClick={() => void shareCadence()}>Share</button>
+            <a className="btn" href="https://buymeacoffee.com/serendeep" target="_blank" rel="noreferrer">Buy me a coffee</a>
+          </Row>
+            </>
+          )}
+        </div>
+      </div>
 
       <AnimatePresence>
         {preview && <ImportDialog preview={preview} onCancel={() => setPreview(null)} onConfirm={() => void confirmImport(preview)} />}
