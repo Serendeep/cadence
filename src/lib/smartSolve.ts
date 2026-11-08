@@ -94,12 +94,22 @@ export function trackMove(t: Tracker, move: string, at: number, method: Method =
   }
   const moves = [...t.moves, { m: move, t: Math.max(0, Math.round(at - t.start)) }]
   if (!isSolved(cube)) return { tracker: { ...t, cube, moves } }
-  const splits = detectSplits(method, t.startCube, moves)
+  return { tracker: { ...t, cube, moves }, finished: finishAt(t.startCube, moves, method) }
+}
+
+function finishAt(startCube: CubeState, moves: TimedMove[], method: Method): SmartFinish {
+  const splits = detectSplits(method, startCube, moves)
   const time = moves[moves.length - 1].t
-  return {
-    tracker: { ...t, cube, moves },
-    finished: { time, moves, splits: splits?.map((v) => Math.min(v, time)) },
-  }
+  return { time, moves, splits: splits?.map((v) => Math.min(v, time)) }
+}
+
+/** Whether a solve is under way that has not reached solved yet. */
+export const solveOpen = (t: Tracker): boolean => t.phase === 'solving' && t.moves.length > 0 && !isSolved(t.cube)
+
+/** Ends an open solve at its last received move, for when the cube's final turn never arrived; the cube is then taken as solved. */
+export function finishSolve(t: Tracker, method: Method = 'cfop'): { tracker: Tracker; finished?: SmartFinish } {
+  if (!solveOpen(t)) return { tracker: t }
+  return { tracker: { ...t, cube: solvedCube() }, finished: finishAt(t.startCube, t.moves, method) }
 }
 
 /** Treat the physical cube as solved again, e.g. after the user resets it by hand. */

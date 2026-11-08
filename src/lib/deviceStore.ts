@@ -1,19 +1,24 @@
 import { useSyncExternalStore } from 'react'
 import {
-  connectGan, connectGanTimer, connectOtherCube, connectStackmat, errorMessage,
+  connectGan, connectGanTimer, connectOtherCube, connectStackmat, errorMessage, RECONNECT_DELAYS_MS, retryWithBackoff,
   type ExternalTimerConnection, type SmartCubeConnection, type SmartCubeHandlers,
 } from './devices'
 import { diag } from './diag'
 import { relativeTo, type Quat } from './orientation'
 import { getSettings } from './settings'
+import { whenNotSolving } from './solving'
+import { toast } from './toast'
 import type { MacRequest } from './moyu'
 import type { StackmatStatus } from './stackmat'
 
 export type CubeKind = 'gan' | 'moyu32' | 'moyu' | 'other'
 export type ExternalKind = 'stackmat' | 'gantimer'
 
+/** Set while a dropped cube is being reconnected, or after that failed while a solve still needs the lab */
+export type CubeLink = 'reconnecting' | 'lost'
+
 export interface DeviceState {
-  cube: { name: string; battery: number | null } | null
+  cube: { name: string; battery: number | null; link?: CubeLink } | null
   external: { name: string; kind: ExternalKind } | null
   connecting: string | null
   error: string | null
@@ -38,6 +43,8 @@ let lastRawSample = 0
 const RAW_SAMPLES = 6
 const RAW_SAMPLE_GAP_MS = 1500
 let cubeConn: SmartCubeConnection | null = null
+// bumped on every connect, drop and disconnect, so stale disconnect events and late reconnects are ignored
+let cubeGen = 0
 let extConn: ExternalTimerConnection | null = null
 let macResolve: ((mac: string | null) => void) | null = null
 
@@ -102,27 +109,65 @@ export function answerMac(mac: string | null): void {
   set({ macRequest: null })
 }
 
-export async function connectCube(kind: CubeKind): Promise<void> {
-  disconnectCube()
-  set({ connecting: LABELS[kind], error: null })
+async function openCube(kind: CubeKind, gen: number, device?: BluetoothDevice): Promise<SmartCubeConnection> {
   const handlers: SmartCubeHandlers = {
     onMove: (m, at) => moveListeners.forEach((l) => l(m, at)),
     onBattery: (b) => state.cube && set({ cube: { ...state.cube, battery: b } }),
     onOrientation,
     gyro: getSettings().trackRotations,
     onDisconnect: () => {
-      cubeConn = null
-      set({ cube: null })
+      if (gen === cubeGen) void cubeDropped(kind)
     },
   }
+  if (kind === 'gan') return connectGan(handlers)
+  if (kind === 'other') return connectOtherCube(handlers)
+  const moyu = await import('./moyu')
+  return kind === 'moyu32' ? moyu.connectMoyu32(handlers, askMac, device) : moyu.connectMoyuClassic(handlers, device)
+}
+
+/** An unexpected drop: reopen the same device a few times, then give up. */
+async function cubeDropped(kind: CubeKind): Promise<void> {
+  const gen = ++cubeGen
+  const device = cubeConn?.device
+  cubeConn = null
+  diag('device.dropped', { kind, retry: device != null }, 'warn')
+  if (!state.cube) return
+  if (!device) {
+    toast('Cube disconnected. Choose the cube again.')
+    return cubeLost(gen)
+  }
+  set({ cube: { ...state.cube, link: 'reconnecting' } })
+  toast('Cube disconnected. Reconnecting…', undefined, 15000)
+  const conn = await retryWithBackoff(
+    () => openCube(kind, gen, device),
+    RECONNECT_DELAYS_MS,
+    () => gen !== cubeGen,
+    (e, attempt) => diag('device.reconnect.failed', { kind, attempt, error: e }, 'warn'),
+  )
+  if (gen !== cubeGen) return conn?.disconnect()
+  if (!conn) {
+    toast('Could not reconnect. Choose the cube again.', undefined, 8000)
+    return cubeLost(gen)
+  }
+  cubeConn = conn
+  set({ cube: { name: conn.name, battery: state.cube?.battery ?? null } })
+  toast('Cube reconnected')
+  diag('device.reconnected', { kind, name: conn.name })
+}
+
+// the lab stays open until a paused solve is finished or discarded, so its moves are not thrown away
+function cubeLost(gen: number): void {
+  if (state.cube) set({ cube: { ...state.cube, link: 'lost' } })
+  whenNotSolving(() => gen === cubeGen && set({ cube: null }))
+}
+
+export async function connectCube(kind: CubeKind): Promise<void> {
+  disconnectCube()
+  const gen = cubeGen
+  set({ connecting: LABELS[kind], error: null })
   resetCubeOrientation()
   try {
-    if (kind === 'gan') cubeConn = await connectGan(handlers)
-    else if (kind === 'other') cubeConn = await connectOtherCube(handlers)
-    else {
-      const moyu = await import('./moyu')
-      cubeConn = kind === 'moyu32' ? await moyu.connectMoyu32(handlers, askMac) : await moyu.connectMoyuClassic(handlers)
-    }
+    cubeConn = await openCube(kind, gen)
     set({ cube: { name: cubeConn.name, battery: null }, connecting: null })
     diag('device.connected', { kind, name: cubeConn.name })
   } catch (e) {
@@ -132,6 +177,7 @@ export async function connectCube(kind: CubeKind): Promise<void> {
 }
 
 export function disconnectCube(): void {
+  cubeGen++
   cubeConn?.disconnect()
   cubeConn = null
   if (state.cube) set({ cube: null })

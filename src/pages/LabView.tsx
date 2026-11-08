@@ -9,7 +9,7 @@ import { isBlind } from '../lib/events'
 import { setSettings } from '../lib/settings'
 import { setSolving } from '../lib/solving'
 import { rouxProgress } from '../lib/roux'
-import { newTracker, resetTracker, scrambleHint, trackMove, type Tracker } from '../lib/smartSolve'
+import { finishSolve, newTracker, resetTracker, scrambleHint, solveOpen, trackMove, type SmartFinish, type Tracker } from '../lib/smartSolve'
 import { createRotationDetector, rotationsPerPhase, solverFrame, timeline } from '../lib/rotations'
 import { inspectionPenalty } from '../lib/timerMachine'
 import { formatMs } from '../lib/time'
@@ -17,6 +17,7 @@ import type { TimedMove } from '../lib/types'
 import { inspectionCaller, preloadCalls } from '../lib/voice'
 import { Twisty, type TwistyHandle } from '../components/Cube'
 import { CoachCard } from '../components/Coach'
+import { DrillBanner } from '../components/DrillBanner'
 import { Results } from '../components/Results'
 import { ConfigBar, ScrambleLine, type ViewProps } from './TimerPage'
 
@@ -31,7 +32,7 @@ function cfopProgress(cube: CubeState): number {
   return best
 }
 
-export function LabView({ data, settings, scramble, scrambleError, onNewScramble, onPrevious, save }: ViewProps) {
+export function LabView({ data, settings, drill, scramble, scrambleError, onNewScramble, onPrevious, save }: ViewProps) {
   const devices = useDevices()
   const [tracker, setTrackerState] = useState<Tracker | null>(null)
   const [now, setNow] = useState(0)
@@ -44,6 +45,13 @@ export function LabView({ data, settings, scramble, scrambleError, onNewScramble
   const setTracker = useCallback((next: Tracker | null) => {
     trackerRef.current = next
     setTrackerState(next)
+  }, [])
+  // a solve whose connection dropped: the clock stops at the last move and moves are ignored until it is finished or discarded
+  const pausedRef = useRef(false)
+  const [paused, setPausedState] = useState(false)
+  const setPaused = useCallback((p: boolean) => {
+    pausedRef.current = p
+    setPausedState(p)
   }, [])
   // whole-cube rotations in the current solve; a ref for the same reason as the tracker
   const detector = useRef(createRotationDetector())
@@ -75,10 +83,28 @@ export function LabView({ data, settings, scramble, scrambleError, onNewScramble
 
 
   const { method } = settings
+  const record = useCallback(
+    (t: Tracker, finished: SmartFinish) => {
+      diag('lab.solve.finished', { moves: finished.moves.length, rotations: rotationsRef.current.length, ms: finished.time })
+      const insp = inspRef.current
+      setInspStart(null)
+      setNow(finished.time)
+      save({
+        time: finished.time,
+        penalty: insp != null ? inspectionPenalty(t.start - insp) : 'ok',
+        splits: finished.splits,
+        moves: finished.moves,
+        rotations: rotationsRef.current,
+        source: 'smartcube',
+      })
+    },
+    [save],
+  )
+
   const onMove = useCallback(
     (m: string, at: number) => {
       const t = trackerRef.current
-      if (!t) return
+      if (!t || pausedRef.current) return
       twisty.current?.addMove(m)
       detector.current.faceTurn(m, at)
       const { tracker: next, finished } = trackMove(t, m, at, method)
@@ -97,23 +123,24 @@ export function LabView({ data, settings, scramble, scrambleError, onNewScramble
         const p = method === 'roux' ? rouxProgress(next.cube) : cfopProgress(next.cube)
         setReached((r) => (p > r.length ? [...r, ...Array(p - r.length).fill(Math.max(0, at - next.start))] : r))
       }
-      if (finished) {
-        diag('lab.solve.finished', { moves: finished.moves.length, rotations: rotationsRef.current.length, ms: finished.time })
-        const insp = inspRef.current
-        setInspStart(null)
-        setNow(finished.time)
-        save({
-          time: finished.time,
-          penalty: insp != null ? inspectionPenalty(next.start - insp) : 'ok',
-          splits: finished.splits,
-          moves: finished.moves,
-          rotations: rotationsRef.current,
-          source: 'smartcube',
-        })
-      }
+      if (finished) record(next, finished)
     },
-    [save, setTracker, method],
+    [record, setTracker, method],
   )
+
+  // moves made while the cube was away never arrive, so a dropped solve cannot be trusted to finish by itself
+  const link = devices.cube?.link
+  useEffect(() => {
+    if (!link) return
+    const t = trackerRef.current
+    if (t && solveOpen(t)) {
+      setPaused(true)
+      setNow(t.moves[t.moves.length - 1].t)
+    } else {
+      inspRef.current = null
+      setInspStart(null)
+    }
+  }, [link, setPaused])
 
   useEffect(() => onCubeMove(onMove), [onMove])
   const busy = tracker?.phase === 'solving' || inspStart != null
@@ -125,7 +152,7 @@ export function LabView({ data, settings, scramble, scrambleError, onNewScramble
       setHasGyro(true)
       twisty.current?.setOrientation(q)
       const t = trackerRef.current
-      if (t?.phase !== 'solving') return
+      if (t?.phase !== 'solving' || pausedRef.current) return
       const at = performance.now()
       const r = detector.current.feed(q, at)
       if (!r) return
@@ -140,8 +167,9 @@ export function LabView({ data, settings, scramble, scrambleError, onNewScramble
     const loop = () => {
       const t = trackerRef.current
       const insp = inspRef.current
-      if (t?.phase === 'solving') setNow(performance.now() - t.start)
-      else if (insp != null) {
+      if (t?.phase === 'solving') {
+        if (!pausedRef.current) setNow(performance.now() - t.start)
+      } else if (insp != null) {
         const elapsed = performance.now() - insp
         setNow(elapsed)
         caller.current(voiceRef.current, insp, elapsed)
@@ -152,7 +180,18 @@ export function LabView({ data, settings, scramble, scrambleError, onNewScramble
     return () => cancelAnimationFrame(raf)
   }, [tracker?.phase, inspStart])
 
+  const finishNow = () => {
+    const t = trackerRef.current
+    if (!t) return
+    const { tracker: next, finished } = finishSolve(t, method)
+    setPaused(false)
+    twisty.current?.reset('')
+    setTracker(next)
+    if (finished) record(next, finished)
+  }
+
   const markSolved = () => {
+    setPaused(false)
     markCubeSolved()
     twisty.current?.reset('')
     const t = trackerRef.current
@@ -162,6 +201,7 @@ export function LabView({ data, settings, scramble, scrambleError, onNewScramble
   }
 
   const solving = tracker?.phase === 'solving'
+  const open = tracker != null && solveOpen(tracker)
   const moves = tracker?.moves ?? []
   const last = data.solves[data.solves.length - 1]
   const display = solving
@@ -186,14 +226,25 @@ export function LabView({ data, settings, scramble, scrambleError, onNewScramble
   return (
     <div className="page lab">
       <div className="conn">
-        <i className="live" />
+        <i className={link ? 'live off' : 'live'} />
         <span>
           {devices.cube?.name ?? 'Smart cube'}
-          {devices.cube?.battery != null ? ` · battery ${devices.cube.battery}%` : ''}
+          {link === 'reconnecting' ? ' · reconnecting…' : link === 'lost' ? ' · disconnected' : devices.cube?.battery != null ? ` · battery ${devices.cube.battery}%` : ''}
         </span>
-        <button type="button" className="btn ghost" onClick={markSolved}>
-          Cube is solved
-        </button>
+        {open ? (
+          <button type="button" className="btn ghost" onClick={finishNow} title="Stop at your last turn and save, if the cube is solved but the timer still runs">
+            Finish solve
+          </button>
+        ) : (
+          <button type="button" className="btn ghost" onClick={markSolved} title="Your cube is solved but the screen disagrees">
+            Mark solved
+          </button>
+        )}
+        {paused && (
+          <button type="button" className="btn ghost" onClick={markSolved}>
+            Discard
+          </button>
+        )}
         {settings.trackRotations && hasGyro && (
           <button type="button" className="btn ghost" onClick={resetCubeOrientation} title="Hold the cube white side up, green side facing you, then press">
             Reset orientation
@@ -211,6 +262,7 @@ export function LabView({ data, settings, scramble, scrambleError, onNewScramble
         </button>
         <span style={{ flex: 1 }} />
         <ConfigBar data={data} settings={settings} />
+        {drill && <DrillBanner drill={drill} solves={data.solves} decimals={settings.decimals} />}
       </div>
 
       <div className="cube3d">
@@ -219,7 +271,7 @@ export function LabView({ data, settings, scramble, scrambleError, onNewScramble
 
       <div className="labside">
         <div className="dim" style={{ fontSize: 13 }}>
-          {solving ? 'Solving' : tracker?.phase === 'armed' ? 'Scrambled. The timer starts on your first turn.' : `Solve ${data.solves.length + 1}`}
+          {paused ? 'Connection dropped. Finish the solve or discard it.' : solving ? 'Solving' : tracker?.phase === 'armed' ? 'Scrambled. The timer starts on your first turn.' : `Solve ${data.solves.length + 1}`}
         </div>
         <motion.div className="labtime" animate={{ scale: solving ? 1.03 : 1 }} transition={{ type: 'spring', stiffness: 260, damping: 26 }}>
           {display}
@@ -292,7 +344,7 @@ export function LabView({ data, settings, scramble, scrambleError, onNewScramble
       {!solving && data.solves.length > 0 && (
         <div style={{ gridColumn: '1 / -1' }}>
           <ScrambleLine scramble={scramble} scrambleError={scrambleError} onNewScramble={onNewScramble} onPrevious={onPrevious} showText={tracker?.phase !== 'scrambling'} />
-          {settings.coach && !busy && <CoachCard solves={data.solves} event={data.session?.event ?? '333'} decimals={settings.decimals} />}
+          {settings.coach && !drill && !busy && <CoachCard solves={data.solves} event={data.session?.event ?? '333'} decimals={settings.decimals} />}
           <Results solves={data.solves} stats={data.stats} decimals={settings.decimals} />
         </div>
       )}

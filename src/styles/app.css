@@ -170,6 +170,13 @@ textarea { width: 100%; resize: vertical; min-height: 72px; }
 /* balance the nav rail so the time sits on the window's centre line, not just the content area's */
 @media (min-width: 721px) { .timer-page { padding-right: calc(var(--pad) + var(--rail)); } }
 .cfg { display: flex; justify-content: center; flex-wrap: wrap; gap: 6px 26px; }
+.drill-banner { align-self: center; max-width: 100%; background: var(--surface); border-radius: var(--r); padding: 6px 6px 6px 16px; font-size: 14px; color: var(--dim); }
+.drill-banner b { color: var(--fg); font-weight: 600; }
+.drill-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.drill-bar > span { margin-right: auto; }
+.drill-cases { display: grid; grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); gap: 6px 10px; border: 0; margin: 8px 0 4px; padding: 0 10px 0 0; }
+.drill-cases legend { padding: 0; margin-bottom: 6px; }
+.drill-cases label { display: flex; align-items: center; gap: 6px; min-height: 32px; color: var(--fg); cursor: pointer; }
 .scramble {
   margin: 26px auto 0; max-width: 980px; text-align: center; color: var(--dim);
   font-size: clamp(17px, 2vw, 23px); line-height: 1.6; min-height: 2.2em; word-spacing: 0.15em;
@@ -253,6 +260,8 @@ textarea { width: 100%; resize: vertical; min-height: 72px; }
 .lab { display: grid; grid-template-columns: minmax(280px, 1fr) minmax(320px, 1fr); grid-template-rows: auto 1fr auto; gap: 18px 48px; min-height: 100%; padding-top: 22px; }
 .lab .conn { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--dim); flex-wrap: wrap; }
 .lab .conn i.live { width: 8px; height: 8px; border-radius: 50%; background: var(--good); }
+.lab .conn .drill-banner { flex-basis: 100%; }
+.lab .conn i.live.off { background: var(--bad); }
 .lab .cube3d { min-height: min(360px, 42vh); position: relative; }
 .lab .cube3d > div { position: absolute; inset: 0; }
 .lab .cube3d .twisty-host, .replay .twisty-host { width: 100%; height: 100%; }
@@ -403,6 +412,7 @@ textarea { width: 100%; resize: vertical; min-height: 72px; }
 .coach-drill h3 { font-size: 15px; font-weight: 600; margin: 0 0 8px; }
 .coach-drill ol { margin: 0 0 14px; padding-left: 20px; color: var(--dim); font-size: 14px; line-height: 1.6; }
 .coach-drill ol:last-child { margin-bottom: 0; }
+.coach-drill .row { display: flex; flex-wrap: wrap; gap: 8px; }
 .coach-focus { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin: 10px 0 16px; }
 .coach-progress { margin: 0; font-size: 14px; color: var(--dim); }
 .coach-progress b { color: var(--fg); font-weight: 600; }

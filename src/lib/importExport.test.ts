@@ -1,5 +1,5 @@
 import { describe, expect, it, test } from 'vitest'
-import { makeBackup, parseCstimer, parseImport, toCstimer, withoutDuplicates } from './importExport'
+import { makeBackup, parseCstimer, parseImport, solveFields, toCstimer, withoutDuplicates } from './importExport'
 
 const sample = {
   session1: [
@@ -45,4 +45,10 @@ test('importing the same solves twice adds nothing, and sessions left empty are 
   expect(duplicates).toBe(2)
   expect(out.sessions.map((s) => s.name)).toEqual(['B'])
   expect(out.solves).toEqual([{ ...solve(1, 3), sessionIndex: 0 }])
+})
+
+test('keeps the drill tag that sync and backups carry, and drops unknown ones', () => {
+  const base = { time: 1000, penalty: 'ok', scramble: 'R U', event: '333', date: 1 }
+  expect(solveFields({ ...base, drill: 'pll' })?.drill).toBe('pll')
+  expect(solveFields({ ...base, drill: 'nope' })?.drill).toBeUndefined()
 })

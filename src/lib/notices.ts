@@ -1,6 +1,7 @@
 import { compareVersions } from './changelog'
 import { db } from './db'
 import { whenNotSolving } from './solving'
+import { isSignedIn } from './sync'
 import { hasToast, toast } from './toast'
 
 export const REPO_URL = 'https://github.com/Serendeep/cadence'
@@ -11,25 +12,39 @@ const NOTICE_TOAST_MS = 60_000
 const STAR_SOLVES = 100
 const STAR_DAYS = 3
 const SHARE_SOLVES = 300
+const SAFE_SOLVES = 200
 
 interface Nudge {
   id: string
   ready: (solves: number, days: () => Promise<number>) => Promise<boolean>
-  message: string
+  message: (solves: number) => string
   action: { label: string; run: () => void }
 }
 
+/** Whether solves live only in this browser's storage, which the browser may clear: not synced, not installed. */
+export function onlyInBrowser(solves: number, signedIn: boolean, installed: boolean): boolean {
+  return solves >= SAFE_SOLVES && !signedIn && !installed
+}
+
+const isInstalled = () => 'desktop' in window || matchMedia('(display-mode: standalone)').matches
+
 const NUDGES: Nudge[] = [
+  {
+    id: 'safe',
+    ready: async (solves) => onlyInBrowser(solves, isSignedIn(), isInstalled()),
+    message: (solves) => `Keep your ${solves.toLocaleString()} solves safe: sign in to sync or install the app`,
+    action: { label: 'Sign in', run: () => location.assign('#/settings/account') },
+  },
   {
     id: 'star',
     ready: async (solves, days) => solves >= STAR_SOLVES && (await days()) >= STAR_DAYS,
-    message: 'Like Cadence? A GitHub star helps other cubers find it.',
+    message: () => 'Like Cadence? A GitHub star helps other cubers find it.',
     action: { label: 'Star', run: () => window.open(REPO_URL, '_blank', 'noopener') },
   },
   {
     id: 'share',
     ready: async (solves) => solves >= SHARE_SOLVES,
-    message: 'Know a cuber who would like Cadence?',
+    message: () => 'Know a cuber who would like Cadence?',
     action: { label: 'Share', run: () => void shareCadence() },
   },
 ]
@@ -86,7 +101,7 @@ export async function checkNotices(): Promise<void> {
   for (const n of NUDGES) {
     if (done.includes(n.id) || !(await n.ready(solves, practiceDays))) continue
     write(SHOWN_KEY, [...done, n.id].join(','))
-    whenNotSolving(() => toast(n.message, n.action, NOTICE_TOAST_MS))
+    whenNotSolving(() => toast(n.message(solves), n.action, NOTICE_TOAST_MS))
     return
   }
 }

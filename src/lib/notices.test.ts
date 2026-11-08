@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 import { changesSince, CHANGELOG, compareVersions } from './changelog'
-import { isUpdate } from './notices'
+import { isUpdate, onlyInBrowser } from './notices'
 
 test('compares versions by number, not text', () => {
   expect(compareVersions('0.1.10', '0.1.9')).toBeGreaterThan(0)
@@ -21,4 +21,11 @@ test('the changelog has notes for the version being built', () => {
   // a release bumps package.json; this fails it until the notes are written
   expect(compareVersions(CHANGELOG[0].version, __APP_VERSION__)).toBeGreaterThanOrEqual(0)
   expect(changesSince('0.1.1').map((r) => r.version)).toContain('0.1.2')
+})
+
+test('asks to keep solves safe only when they live in this browser alone', () => {
+  expect(onlyInBrowser(200, false, false)).toBe(true)
+  expect(onlyInBrowser(199, false, false)).toBe(false)
+  expect(onlyInBrowser(500, true, false)).toBe(false)
+  expect(onlyInBrowser(500, false, true)).toBe(false)
 })

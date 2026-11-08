@@ -27,7 +27,7 @@ export interface Engine {
 /** Typing in a field or using a dialog must never start the timer. */
 function ignoredTarget(t: EventTarget | null): boolean {
   const el = t as HTMLElement | null
-  return !!el?.closest?.('input, textarea, select, button, a, [contenteditable="true"], [role="dialog"], [role="menu"]')
+  return !!el?.closest?.('input, textarea, select, button, label, a, [contenteditable="true"], [role="dialog"], [role="menu"]')
 }
 
 const inspStartOf = (s: TimerState): number | undefined =>
