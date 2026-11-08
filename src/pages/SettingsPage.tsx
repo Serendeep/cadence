@@ -334,6 +334,11 @@ export function SettingsPage() {
         <Switch label="Scramble preview" checked={s.scramblePreview} onChange={(v) => setSettings({ scramblePreview: v })} />
       </Row>
 
+      <h2 className="setting-group">Coach</h2>
+      <Row title="Coach" desc="After a 10-minute break, sums up the sitting you just finished. In Insights, names what costs you the most time and suggests a drill for it. Off by default, so the timer stays plain.">
+        <Switch label="Coach" checked={s.coach} onChange={(v) => setSettings({ coach: v })} />
+      </Row>
+
       <h2 className="setting-group">Devices</h2>
       <Row
         id="devices"

@@ -1,10 +1,9 @@
-import { useLiveQuery } from 'dexie-react-hooks'
 import { useMemo, useState } from 'react'
 import { PhaseBar, Segmented } from '../components/Bits'
+import { CoachSection } from '../components/Coach'
 import { phaseNames } from '../lib/cfop'
 import { Heatmap, Histogram, LineChart } from '../components/Charts'
-import { useSessionData } from '../hooks/useSessionData'
-import { db } from '../lib/db'
+import { useEventSolves, useSessionData } from '../hooks/useSessionData'
 import { eventById } from '../lib/events'
 import { byDay, commonPhaseCount, pbHistory, phaseAverages, practiceGrid } from '../lib/insights'
 import { useSettings } from '../lib/settings'
@@ -37,10 +36,7 @@ export function InsightsPage() {
   const [scope, setScope] = useState<Scope>('session')
   const [avgN, setAvgN] = useState<(typeof AVG_OPTIONS)[number]>(12)
   const event = session?.event ?? '333'
-  const eventSolves = useLiveQuery(
-    () => (scope === 'event' ? db.solves.orderBy('date').filter((s) => s.event === event).toArray() : Promise.resolve([] as Solve[])),
-    [scope, event],
-  )
+  const eventSolves = useEventSolves(event, scope === 'event' || settings.coach)
   const solves = scope === 'session' ? sessionSolves : eventSolves ?? NO_SOLVES
   const values = useMemo(() => solves.map(solveValue), [solves])
   const stats = useMemo(() => sessionStats(values), [values])
@@ -101,6 +97,7 @@ export function InsightsPage() {
   function insightsBody() {
     return (
       <>
+      {settings.coach && eventSolves && <CoachSection event={event} solves={eventSolves} />}
       <div className="kpis">
         <div className="kpi">
           Solves<b className="num">{stats.count.toLocaleString()}</b>

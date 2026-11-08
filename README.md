@@ -36,7 +36,7 @@ Solves live in your browser's or the desktop app's own database. Nothing leaves 
 
 ## Documentation
 
-- [User guide](docs/user-guide.md): timing, sessions, inspection, phases, Insights, import and export, sync.
+- [User guide](docs/user-guide.md): timing, sessions, inspection, phases, Insights, Coach, import and export, sync.
 - [Smart cubes and timers](docs/smart-cubes.md): connecting each device, the smart cube lab, rotations, and fixing Bluetooth.
 - For contributors: [development](docs/development.md), [architecture](docs/architecture.md), [sync and sign-in](docs/sync.md), [device protocols](docs/device-protocols.md) and [deploying and releasing](docs/releasing.md).
 

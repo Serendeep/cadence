@@ -34,3 +34,8 @@ export function useSessionData(): SessionData {
   const stats = useMemo(() => sessionStats(values), [values])
   return { sessions: sessions ?? [], session, solves, values, stats, loading: !sessions }
 }
+
+/** Every solve of one event across sessions, in date order; undefined while loading. */
+export function useEventSolves(event: string, enabled = true): Solve[] | undefined {
+  return useLiveQuery(() => (enabled ? db.solves.orderBy('date').filter((s) => s.event === event).toArray() : NO_SOLVES), [event, enabled])
+}
