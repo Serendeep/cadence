@@ -77,7 +77,7 @@ If `bluetoothctl show` lists no controller, the adapter itself is stuck. A full 
 
 **A MoYu cube connects but no moves appear.** The address is probably wrong. Disconnect, connect again and enter the address from a scanner app when asked.
 
-**The cube disconnects.** MoYu cubes reconnect by themselves: Cadence tries three times over about ten seconds and tells you how it went. A GAN cube can't be reopened without the device list, so choose the cube again under Settings > Devices. Turns made while the cube was away are lost, so press Mark solved once the real cube is solved again.
+**The cube disconnects.** GAN and MoYu cubes reconnect by themselves: Cadence tries three times over about ten seconds and tells you how it went. If that fails, choose the cube again under Settings > Devices. Turns made while the cube was away are lost, so press Mark solved once the real cube is solved again.
 
 If the connection drops during a solve, the timer stops at your last turn and the solve waits for you. Press Finish solve to save it at that time, or Discard to drop it. Nothing is saved until you choose.
 
