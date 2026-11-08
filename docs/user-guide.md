@@ -69,6 +69,8 @@ It looks for four things, each only once there is enough data to trust:
 
 The finding that would save the most time per solve comes first, with a short drill. Press **Work on this** and Coach notes where you started. From then on it shows the before and after, for example `F2L: 10.60 → 9.80 s over 24 solves`, until you press **Done with this**. The finding you work on syncs with your other settings.
 
+On a 3x3 event, a slow F2L, OLL or PLL also gets **Practise this**, and F2L gets **Last slot only** as well. Pressing one opens the timer in drill mode, with scrambles that leave everything before that phase solved: the cross for F2L, the cross and three pairs for last slot, F2L for OLL, and F2L plus OLL for PLL. Scramble with white on top and green in front as usual. The drilled pieces end up on the bottom, so turn the cube over to start. A bar above the scramble shows the drill, how many solves you have done and their mean. For PLL, **Cases** lets you pick which cases come up. OLL cases are random for now. Drill solves go to their own session, such as `3x3 drills`. Coach, the Coach card and the "All 3x3" view in Insights leave them out, so practice never changes your stats. **End drill** takes you back to the session you were in. Drill mode belongs to the device it was started on and does not sync, though the drill solves do.
+
 When you come back to the timer after a break of 10 minutes or more, a card sums up the sitting you just finished: how many solves, the mean against your usual, your best, and the top finding. It goes away when you dismiss it or start the next solve.
 
 ## Bringing your history over from csTimer

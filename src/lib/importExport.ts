@@ -1,4 +1,4 @@
-import type { InputSource, Penalty, Session, Solve, TimedMove } from './types'
+import { DRILL_KINDS, type DrillKind, type InputSource, type Penalty, type Session, type Solve, type TimedMove } from './types'
 
 /** cstimer scramble-type ids mapped to WCA / cubing.js event ids. */
 const CSTIMER_EVENTS: Record<string, string> = {
@@ -116,6 +116,7 @@ export function solveFields(v: Record<string, unknown>): Omit<Solve, 'id' | 'ses
     moves: timedMoves(v.moves),
     rotations: timedMoves(v.rotations),
     source: SOURCES.includes(v.source as InputSource) ? (v.source as InputSource) : undefined,
+    drill: DRILL_KINDS.includes(v.drill as DrillKind) ? (v.drill as DrillKind) : undefined,
   }
 }
 

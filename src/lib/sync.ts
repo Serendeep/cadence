@@ -21,7 +21,7 @@ const PERIODIC_MS = 5 * 60 * 1000
 // re-send edits from just before the last push, in case one was being written while that push read the database
 const PUSH_OVERLAP_MS = 1000
 // these describe this device, not the solver, so they never sync
-const LOCAL_ONLY: readonly (keyof Settings)[] = ['input', 'sessionId', 'shareDiagnostics']
+const LOCAL_ONLY: readonly (keyof Settings)[] = ['input', 'sessionId', 'shareDiagnostics', 'drill']
 
 type Kind = 'session' | 'solve' | 'settings'
 export interface SyncRecord {

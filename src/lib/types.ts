@@ -2,6 +2,9 @@ export type Penalty = 'ok' | '+2' | 'dnf'
 
 export type InputSource = 'keyboard' | 'touch' | 'stackmat' | 'smartcube' | 'gantimer' | 'typing' | 'import'
 
+export const DRILL_KINDS = ['f2l', 'lsll', 'oll', 'pll'] as const
+export type DrillKind = (typeof DRILL_KINDS)[number]
+
 export interface TimedMove {
   /** Move in WCA notation, e.g. "R'" */
   m: string
@@ -34,6 +37,8 @@ export interface Solve extends Synced {
   /** Whole-cube rotations (x, y', z2…) from a gyroscope cube, kept apart from moves so move counts and TPS stay pure */
   rotations?: TimedMove[]
   source?: InputSource
+  /** Set on practice solves from a guided drill; they stay out of statistics and Coach */
+  drill?: DrillKind
 }
 
 export interface Session extends Synced {
