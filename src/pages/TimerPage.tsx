@@ -6,14 +6,16 @@ import { addSolve, createSession, updateSession } from '../lib/db'
 import { connectCube, connectExternal, disconnectCube, disconnectExternal, useDevices, type CubeKind } from '../lib/deviceStore'
 import { bluetoothAvailable } from '../lib/devices'
 import { EVENTS, eventById, isBlind, twistySupports } from '../lib/events'
+import { drillScramble } from '../lib/drills'
 import { nextScramble } from '../lib/scramble'
-import { setSettings, useSettings, type InputMethod, type Settings } from '../lib/settings'
+import { setSettings, useSettings, type DrillMode, type InputMethod, type Settings } from '../lib/settings'
 import { scrambledState } from '../lib/smartSolve'
 import { isFocused, type TimerResult } from '../lib/timerMachine'
 import { effective, formatMs, parseTyped } from '../lib/time'
 import { toast } from '../lib/toast'
-import type { InputSource, Penalty, TimedMove } from '../lib/types'
+import type { DrillKind, InputSource, Penalty, TimedMove } from '../lib/types'
 import { CoachCard } from '../components/Coach'
+import { DrillBanner } from '../components/DrillBanner'
 import { CubeNet, Twisty } from '../components/Cube'
 import { Menu } from '../components/Menu'
 import { Results } from '../components/Results'
@@ -38,7 +40,11 @@ export function TimerPage({ onFocusChange }: { onFocusChange: (f: boolean) => vo
   const data = useSessionData()
   const devices = useDevices()
   const event = data.session?.event ?? '333'
-  const [scramble, setScramble] = useState<{ text: string; event: string } | null>(null)
+  // drill mode belongs to the drill session; picking another session from the menu pauses it
+  const drill = settings.drill && settings.drill.sessionId === data.session?.id ? settings.drill : null
+  const drillKind = drill?.kind
+  const drillCases = drill?.cases
+  const [scramble, setScramble] = useState<{ text: string; event: string; drill?: DrillKind } | null>(null)
   const [scrambleError, setScrambleError] = useState(false)
   const scrambleRef = useRef(scramble)
   const history = useRef<string[]>([])
@@ -47,15 +53,15 @@ export function TimerPage({ onFocusChange }: { onFocusChange: (f: boolean) => vo
   })
 
   const load = useCallback(() => {
-    nextScramble(event)
+    ;(drillKind ? drillScramble(drillKind, drillCases) : nextScramble(event))
       .then((text) => {
         setScrambleError(false)
         const cur = scrambleRef.current
-        if (cur && cur.event === event) history.current = [cur.text, ...history.current].slice(0, 20)
-        setScramble({ text, event })
+        if (cur && cur.event === event && cur.drill === drillKind) history.current = [cur.text, ...history.current].slice(0, 20)
+        setScramble({ text, event, drill: drillKind })
       })
       .catch(() => setScrambleError(true))
-  }, [event])
+  }, [event, drillKind, drillCases])
 
   useEffect(() => {
     history.current = []
@@ -66,7 +72,7 @@ export function TimerPage({ onFocusChange }: { onFocusChange: (f: boolean) => vo
     const [prev, ...rest] = history.current
     if (!prev) return toast('No earlier scramble in this sitting')
     history.current = rest
-    setScramble({ text: prev, event })
+    setScramble({ text: prev, event, drill: drillKind })
   }
 
   const sessionId = data.session?.id
@@ -85,6 +91,7 @@ export function TimerPage({ onFocusChange }: { onFocusChange: (f: boolean) => vo
         moves: r.moves,
         rotations: r.rotations?.length ? r.rotations : undefined,
         source: r.source,
+        drill: scr.drill,
       })
       load()
     },
@@ -97,7 +104,7 @@ export function TimerPage({ onFocusChange }: { onFocusChange: (f: boolean) => vo
   }, [lab, onFocusChange])
 
   const shared: ViewProps = {
-    data, settings, scramble: scramble?.event === event ? scramble.text : null, scrambleError, onNewScramble: load, onPrevious: previous, save,
+    data, settings, drill, scramble: scramble?.event === event && scramble.drill === drillKind ? scramble.text : null, scrambleError, onNewScramble: load, onPrevious: previous, save,
   }
   return lab ? <LabView {...shared} /> : <FocusView {...shared} onFocusChange={onFocusChange} />
 }
@@ -105,6 +112,7 @@ export function TimerPage({ onFocusChange }: { onFocusChange: (f: boolean) => vo
 export interface ViewProps {
   data: SessionData
   settings: Settings
+  drill: DrillMode | null
   scramble: string | null
   scrambleError: boolean
   onNewScramble: () => void
@@ -142,7 +150,7 @@ export function ScrambleLine({ scramble, scrambleError, onNewScramble, onPreviou
   )
 }
 
-function FocusView({ data, settings, scramble, scrambleError, onNewScramble, onPrevious, save, onFocusChange }: ViewProps & { onFocusChange: (f: boolean) => void }) {
+function FocusView({ data, settings, drill, scramble, scrambleError, onNewScramble, onPrevious, save, onFocusChange }: ViewProps & { onFocusChange: (f: boolean) => void }) {
   const devices = useDevices()
   const external = devices.external != null && (settings.input === 'stackmat' || settings.input === 'gantimer')
   const typing = settings.input === 'typing'
@@ -197,6 +205,7 @@ function FocusView({ data, settings, scramble, scrambleError, onNewScramble, onP
     <div className="page timer-page" onPointerDown={engine.pointerDown} onPointerUp={engine.pointerUp} onPointerCancel={engine.pointerUp}>
       <div className="band top">
         <ConfigBar data={data} settings={settings} />
+        {drill && <DrillBanner drill={drill} solves={data.solves} decimals={settings.decimals} />}
         <ScrambleLine scramble={scramble} scrambleError={scrambleError} onNewScramble={onNewScramble} onPrevious={onPrevious} />
       </div>
 
@@ -218,7 +227,7 @@ function FocusView({ data, settings, scramble, scrambleError, onNewScramble, onP
       </div>
 
       <div className="band bottom chrome">
-        {settings.coach && (state.phase === 'idle' || state.phase === 'stopped') && <CoachCard solves={data.solves} event={ev.id} decimals={dec} />}
+        {settings.coach && !drill && !last?.drill && (state.phase === 'idle' || state.phase === 'stopped') && <CoachCard solves={data.solves} event={ev.id} decimals={dec} />}
         {data.solves.length > 0 ? (
           <Results solves={data.solves} stats={data.stats} decimals={dec} />
         ) : (

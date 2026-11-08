@@ -2,9 +2,12 @@ import { useEffect, useMemo, useState } from 'react'
 import { useEventSolves } from '../hooks/useSessionData'
 import { DRILLS, findings, lastSitting, measure, SITTING_GAP_MS, type Finding, type FindingKind, type SittingSummary } from '../lib/coach'
 import { CFOP_PHASES } from '../lib/cfop'
+import { startDrill } from '../lib/drillMode'
+import { eventById } from '../lib/events'
 import { setSettings, useSettings, type CoachFocus } from '../lib/settings'
 import { formatMs } from '../lib/time'
-import type { Solve } from '../lib/types'
+import { toast } from '../lib/toast'
+import type { DrillKind, Solve } from '../lib/types'
 
 const SEEN_KEY = 'cadence:coach-seen'
 const TICK_MS = 60_000
@@ -44,15 +47,33 @@ function ProgressLine({ focus, progress }: { focus: CoachFocus; progress: Progre
   )
 }
 
-function DrillCard({ kind, onStart }: { kind: FindingKind; onStart?: () => void }) {
+// guided drills for the phases a generated scramble can set up; the first is the main one
+const PRACTICE: Partial<Record<FindingKind, { kind: DrillKind; label: string }[]>> = {
+  'phase-1': [{ kind: 'f2l', label: 'Practise this' }, { kind: 'lsll', label: 'Last slot only' }],
+  'phase-2': [{ kind: 'oll', label: 'Practise this' }],
+  'phase-3': [{ kind: 'pll', label: 'Practise this' }],
+}
+
+const practise = (kind: DrillKind, event: string) =>
+  void startDrill(kind, event).then(() => location.assign('#/timer'), () => toast('Could not start the drill. Try again.'))
+
+function DrillCard({ kind, event, onStart }: { kind: FindingKind; event: string; onStart?: () => void }) {
   const drill = DRILLS[kind]
+  const practice = eventById(event).is3x3 ? PRACTICE[kind] ?? [] : []
   return (
     <div className="coach-drill">
       <h3>{drill.title} <span className="dim">· {drill.minutes} min</span></h3>
       <ol>
         {drill.steps.map((s) => <li key={s}>{s}</li>)}
       </ol>
-      {onStart && <button type="button" className="btn primary" onClick={onStart}>Work on this</button>}
+      {(onStart || practice.length > 0) && (
+        <div className="row">
+          {onStart && <button type="button" className="btn primary" onClick={onStart}>Work on this</button>}
+          {practice.map((p) => (
+            <button key={p.kind} type="button" className="btn" onClick={() => practise(p.kind, event)}>{p.label}</button>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -76,13 +97,13 @@ export function CoachSection({ event, solves }: { event: string; solves: readonl
             <ProgressLine focus={focus} progress={progress} />
             <button type="button" className="btn" onClick={() => setSettings({ coachFocus: null })}>Done with this</button>
           </div>
-          <DrillCard kind={focus.kind} />
+          <DrillCard kind={focus.kind} event={event} />
         </>
       ) : top ? (
         <>
           <p className="coach-headline">{top.title}</p>
           <p className="sub">{top.detail}</p>
-          <DrillCard kind={top.kind} onStart={() => start(top)} />
+          <DrillCard kind={top.kind} event={event} onStart={() => start(top)} />
         </>
       ) : (
         <p className="sub">

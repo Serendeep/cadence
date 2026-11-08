@@ -16,6 +16,7 @@ import type { TimedMove } from '../lib/types'
 import { inspectionCaller, preloadCalls } from '../lib/voice'
 import { Twisty, type TwistyHandle } from '../components/Cube'
 import { CoachCard } from '../components/Coach'
+import { DrillBanner } from '../components/DrillBanner'
 import { Results } from '../components/Results'
 import { ConfigBar, ScrambleLine, type ViewProps } from './TimerPage'
 
@@ -30,7 +31,7 @@ function cfopProgress(cube: CubeState): number {
   return best
 }
 
-export function LabView({ data, settings, scramble, scrambleError, onNewScramble, onPrevious, save }: ViewProps) {
+export function LabView({ data, settings, drill, scramble, scrambleError, onNewScramble, onPrevious, save }: ViewProps) {
   const devices = useDevices()
   const [tracker, setTrackerState] = useState<Tracker | null>(null)
   const [now, setNow] = useState(0)
@@ -258,6 +259,7 @@ export function LabView({ data, settings, scramble, scrambleError, onNewScramble
         </button>
         <span style={{ flex: 1 }} />
         <ConfigBar data={data} settings={settings} />
+        {drill && <DrillBanner drill={drill} solves={data.solves} decimals={settings.decimals} />}
       </div>
 
       <div className="cube3d">
@@ -339,7 +341,7 @@ export function LabView({ data, settings, scramble, scrambleError, onNewScramble
       {!solving && data.solves.length > 0 && (
         <div style={{ gridColumn: '1 / -1' }}>
           <ScrambleLine scramble={scramble} scrambleError={scrambleError} onNewScramble={onNewScramble} onPrevious={onPrevious} showText={tracker?.phase !== 'scrambling'} />
-          {settings.coach && !busy && <CoachCard solves={data.solves} event={data.session?.event ?? '333'} decimals={settings.decimals} />}
+          {settings.coach && !drill && !busy && <CoachCard solves={data.solves} event={data.session?.event ?? '333'} decimals={settings.decimals} />}
           <Results solves={data.solves} stats={data.stats} decimals={settings.decimals} />
         </div>
       )}

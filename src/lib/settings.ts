@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react'
 import { DRILLS, type FindingKind } from './coach'
+import { DRILL_KINDS, type DrillKind } from './types'
 import { VOICES, type Voice } from './voice'
 
 const THEMES = ['system', 'graphite', 'nord', 'paper', 'matcha', 'mono-light'] as const
@@ -13,6 +14,17 @@ export interface CoachFocus {
   event: string
   since: number
   baseline: number
+}
+
+/** A guided drill in progress on this device. */
+export interface DrillMode {
+  kind: DrillKind
+  /** The drill session its solves go to */
+  sessionId: number
+  /** The session to go back to when the drill ends */
+  returnTo: number | null
+  /** PLL cases to practise; null means all */
+  cases: string[] | null
 }
 
 export interface Settings {
@@ -32,6 +44,7 @@ export interface Settings {
   keepAwake: boolean
   coach: boolean
   coachFocus: CoachFocus | null
+  drill: DrillMode | null
 }
 
 const DEFAULTS: Settings = {
@@ -50,6 +63,7 @@ const DEFAULTS: Settings = {
   keepAwake: true,
   coach: false,
   coachFocus: null,
+  drill: null,
 }
 
 const KEY = 'better-cstimer:settings'
@@ -59,6 +73,13 @@ function isCoachFocus(v: unknown): v is CoachFocus {
   if (typeof v !== 'object' || v === null) return false
   const f = v as Record<string, unknown>
   return typeof f.kind === 'string' && Object.hasOwn(DRILLS, f.kind) && typeof f.event === 'string' && typeof f.since === 'number' && typeof f.baseline === 'number'
+}
+
+function isDrillMode(v: unknown): v is DrillMode {
+  if (typeof v !== 'object' || v === null) return false
+  const d = v as Record<string, unknown>
+  return DRILL_KINDS.includes(d.kind as DrillKind) && typeof d.sessionId === 'number' && (typeof d.returnTo === 'number' || d.returnTo === null)
+    && (d.cases === null || (Array.isArray(d.cases) && d.cases.every((c) => typeof c === 'string')))
 }
 
 /** Keeps only known keys whose value has the default's type, so a bad localStorage value cannot break the app. */
@@ -71,6 +92,7 @@ function sanitize(raw: unknown): Settings {
     if (k === 'sessionId' ? typeof v === 'number' || v === null : typeof v === typeof DEFAULTS[k]) out[k] = v
   }
   if (!isCoachFocus(out.coachFocus)) out.coachFocus = null
+  if (!isDrillMode(out.drill)) out.drill = null
   if (!THEMES.includes(out.theme as ThemeName)) out.theme = DEFAULTS.theme
   // older versions stored an on/off switch
   if (src.inspectionVoice === false) out.inspectionVoice = 'off'
