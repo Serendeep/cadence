@@ -15,6 +15,7 @@ import { formatMs } from '../lib/time'
 import type { TimedMove } from '../lib/types'
 import { inspectionCaller, preloadCalls } from '../lib/voice'
 import { Twisty, type TwistyHandle } from '../components/Cube'
+import { CoachCard } from '../components/Coach'
 import { Results } from '../components/Results'
 import { ConfigBar, ScrambleLine, type ViewProps } from './TimerPage'
 
@@ -288,6 +289,7 @@ export function LabView({ data, settings, scramble, scrambleError, onNewScramble
       {!solving && data.solves.length > 0 && (
         <div style={{ gridColumn: '1 / -1' }}>
           <ScrambleLine scramble={scramble} scrambleError={scrambleError} onNewScramble={onNewScramble} onPrevious={onPrevious} showText={tracker?.phase !== 'scrambling'} />
+          {settings.coach && !busy && <CoachCard solves={data.solves} event={data.session?.event ?? '333'} decimals={settings.decimals} />}
           <Results solves={data.solves} stats={data.stats} decimals={settings.decimals} />
         </div>
       )}

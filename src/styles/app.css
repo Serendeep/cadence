@@ -398,3 +398,26 @@ textarea { width: 100%; resize: vertical; min-height: 72px; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
 }
+
+.coach-headline { font-size: 20px; font-weight: 600; margin: 10px 0 4px; letter-spacing: -0.01em; }
+.coach .sub { color: var(--dim); font-size: 14px; margin: 0 0 14px; max-width: 70ch; line-height: 1.55; }
+.coach-drill { background: var(--surface); border-radius: var(--r); padding: 16px 20px; max-width: 640px; }
+.coach-drill h3 { font-size: 15px; font-weight: 600; margin: 0 0 8px; }
+.coach-drill ol { margin: 0 0 14px; padding-left: 20px; color: var(--dim); font-size: 14px; line-height: 1.6; }
+.coach-drill ol:last-child { margin-bottom: 0; }
+.coach-focus { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin: 10px 0 16px; }
+.coach-progress { margin: 0; font-size: 14px; color: var(--dim); }
+.coach-progress b { color: var(--fg); font-weight: 600; }
+.coach { margin-bottom: 44px; }
+.coach-more { margin-top: 14px; font-size: 14px; color: var(--dim); }
+.coach-more summary { cursor: pointer; color: var(--fg); }
+.coach-more ul { margin: 8px 0 0; padding-left: 20px; line-height: 1.6; max-width: 70ch; }
+.coach-more b { color: var(--fg); font-weight: 600; }
+.coach-card .good, .coach-progress .good { color: var(--good); }
+.coach-card .bad, .coach-progress .bad { color: var(--bad); }
+.coach-card { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 20; width: min(520px, calc(100% - 32px)); background: var(--raised); border: 1px solid var(--line); box-shadow: 0 8px 30px rgb(0 0 0 / 0.18); border-radius: var(--r); padding: 14px 18px; font-size: 14px; color: var(--dim); }
+.coach-card p { margin: 6px 0 0; line-height: 1.5; }
+.coach-card b { color: var(--fg); font-weight: 600; }
+.coach-card-head { display: flex; justify-content: space-between; align-items: baseline; }
+.coach-card .row { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+@media (max-width: 720px) { .coach-card { bottom: calc(72px + env(safe-area-inset-bottom)); } }

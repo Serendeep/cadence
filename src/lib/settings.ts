@@ -1,10 +1,19 @@
 import { useSyncExternalStore } from 'react'
+import { DRILLS, type FindingKind } from './coach'
 import { VOICES, type Voice } from './voice'
 
 const THEMES = ['system', 'graphite', 'nord', 'paper', 'matcha', 'mono-light'] as const
 export type ThemeName = (typeof THEMES)[number]
 export type InputMethod = 'keyboard' | 'stackmat' | 'smartcube' | 'gantimer'
 export type TimerUpdate = 'live' | 'seconds' | 'hidden'
+
+/** The finding the solver chose to work on, with its metric when they started, so Coach can show before and after. */
+export interface CoachFocus {
+  kind: FindingKind
+  event: string
+  since: number
+  baseline: number
+}
 
 export interface Settings {
   theme: ThemeName
@@ -21,6 +30,8 @@ export interface Settings {
   shareDiagnostics: boolean
   trackRotations: boolean
   keepAwake: boolean
+  coach: boolean
+  coachFocus: CoachFocus | null
 }
 
 const DEFAULTS: Settings = {
@@ -37,10 +48,18 @@ const DEFAULTS: Settings = {
   shareDiagnostics: false,
   trackRotations: true,
   keepAwake: true,
+  coach: false,
+  coachFocus: null,
 }
 
 const KEY = 'better-cstimer:settings'
 const listeners = new Set<() => void>()
+
+function isCoachFocus(v: unknown): v is CoachFocus {
+  if (typeof v !== 'object' || v === null) return false
+  const f = v as Record<string, unknown>
+  return typeof f.kind === 'string' && Object.hasOwn(DRILLS, f.kind) && typeof f.event === 'string' && typeof f.since === 'number' && typeof f.baseline === 'number'
+}
 
 /** Keeps only known keys whose value has the default's type, so a bad localStorage value cannot break the app. */
 function sanitize(raw: unknown): Settings {
@@ -51,6 +70,7 @@ function sanitize(raw: unknown): Settings {
     const v = src[k]
     if (k === 'sessionId' ? typeof v === 'number' || v === null : typeof v === typeof DEFAULTS[k]) out[k] = v
   }
+  if (!isCoachFocus(out.coachFocus)) out.coachFocus = null
   if (!THEMES.includes(out.theme as ThemeName)) out.theme = DEFAULTS.theme
   // older versions stored an on/off switch
   if (src.inspectionVoice === false) out.inspectionVoice = 'off'

@@ -52,6 +52,21 @@ Insights describes the current session, or every session of the same event with 
 - **Day by day:** the daily mean and best over your last 60 practice days.
 - Phase averages when your solves have splits, and a timeline of personal bests.
 
+## Coach
+
+Coach is off until you turn it on in Settings > Coach. It reads every solve of the current event and names what costs you the most time, measured against your own solving rather than anyone else's.
+
+It looks for four things, each only once there is enough data to trust:
+
+- **A slow phase.** With 60 or more solves that carry CFOP splits (four phases, or a smart cube), it compares your last 20 with the best stretch of 20 you have done. A phase more than 0.3 s slower than in that stretch is a finding.
+- **Slow solves.** Over your last 50 solves (25 at least), it adds up how much the solves more than 20% above your median raise your mean.
+- **Warm-up.** Across sittings of 10 solves or more, it checks whether your first 3 solves are slower than the rest. A sitting ends at a break of 10 minutes.
+- **Fatigue.** Across sittings of 30 solves or more, it checks whether your last 10 are slower than the middle.
+
+The finding that would save the most time per solve comes first, with a short drill. Press **Work on this** and Coach notes where you started. From then on it shows the before and after, for example `F2L: 10.60 → 9.80 s over 24 solves`, until you press **Done with this**. The finding you work on syncs with your other settings.
+
+When you come back to the timer after a break of 10 minutes or more, a card sums up the sitting you just finished: how many solves, the mean against your usual, your best, and the top finding. It goes away when you dismiss it or start the next solve.
+
 ## Bringing your history over from csTimer
 
 1. In csTimer, open Export and choose Export to file.

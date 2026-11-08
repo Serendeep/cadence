@@ -13,6 +13,7 @@ import { isFocused, type TimerResult } from '../lib/timerMachine'
 import { effective, formatMs } from '../lib/time'
 import { toast } from '../lib/toast'
 import type { InputSource, Penalty, TimedMove } from '../lib/types'
+import { CoachCard } from '../components/Coach'
 import { CubeNet, Twisty } from '../components/Cube'
 import { Menu } from '../components/Menu'
 import { Results } from '../components/Results'
@@ -211,6 +212,7 @@ function FocusView({ data, settings, scramble, scrambleError, onNewScramble, onP
       </div>
 
       <div className="band bottom chrome">
+        {settings.coach && (state.phase === 'idle' || state.phase === 'stopped') && <CoachCard solves={data.solves} event={ev.id} decimals={dec} />}
         {data.solves.length > 0 ? (
           <Results solves={data.solves} stats={data.stats} decimals={dec} />
         ) : (
