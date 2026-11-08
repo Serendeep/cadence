@@ -86,8 +86,7 @@ export function CoachSection({ event, solves }: { event: string; solves: readonl
         </>
       ) : (
         <p className="sub">
-          Nothing stands out yet. Coach checks your last 50 solves for slow outliers once you have 25, compares phases once you have 60 solves with CFOP splits,
-          and looks at warm-up and fatigue after three sittings of 10 or more solves.
+          Nothing stands out yet. Coach needs 25 solves, or 60 with CFOP splits to compare phases.
         </p>
       )}
       {rest.length > 0 && (

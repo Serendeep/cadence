@@ -17,7 +17,7 @@ A speedcubing timer for the desktop, the browser and your phone. It keeps out of
 
 ## Install
 
-**On a phone or any browser,** open [timer.serendeep.app](https://timer.serendeep.app). In Chrome or Edge, tap Install when the app offers it, or use Settings > Install the app. On an iPhone, tap Share, then Add to Home Screen. The installed app works offline and updates itself; a Reload button appears when a new version is ready.
+**On a phone or any browser,** open [timer.serendeep.app](https://timer.serendeep.app). In Chrome or Edge, tap Install when the app offers it, or use Settings > Account > Install the app. On an iPhone, tap Share, then Add to Home Screen. The installed app works offline and updates itself; a Reload button appears when a new version is ready.
 
 **On a computer,** download the file for your system from [Releases](https://github.com/Serendeep/cadence/releases/latest). The builds are not code-signed, so each system asks once before the first launch.
 
@@ -31,7 +31,7 @@ The app checks for a new version at launch and every six hours. On Windows and w
 
 Solves live in your browser's or the desktop app's own database. Nothing leaves the device unless you do one of two things:
 
-- **Sign in to sync.** Your sessions, solves and settings are stored under your WCA account on Cadence's server so your other devices can fetch them. Settings > Delete synced data erases that copy.
+- **Sign in to sync.** Your sessions, solves and settings are stored under your WCA account on Cadence's server so your other devices can fetch them. Settings > Account > Delete synced data erases that copy.
 - **Turn on Share diagnostics.** Cadence then sends device connection steps and error messages, never solves, times or your name.
 
 ## Documentation

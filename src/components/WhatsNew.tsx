@@ -20,7 +20,7 @@ export function WhatsNew() {
   }
   return (
     <>
-      <button type="button" className="btn" onClick={() => location.assign(`#/settings${HASH}`)}>What's new</button>
+      <button type="button" className="btn" onClick={() => location.assign(`#/settings/about${HASH}`)}>What's new</button>
       <AnimatePresence>
         {open && (
           <Dialog title="What's new" onClose={close}>

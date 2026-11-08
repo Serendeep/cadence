@@ -1,6 +1,6 @@
 # Smart cubes and timers
 
-Cadence talks to Bluetooth smart cubes, the GAN Smart Timer and a Stackmat. Connect one under Settings > Timers and smart cubes.
+Cadence talks to Bluetooth smart cubes, the GAN Smart Timer and a Stackmat. Connect one under Settings > Devices.
 
 ## Which browser
 
@@ -47,7 +47,7 @@ On cubes with a gyroscope, Cadence notices when you turn the whole cube, such as
 
 Rotations show in brackets in the move strip and the reconstruction, as a count in the stats, and per phase. Moves after a rotation are named the way you saw them: after a `(y)`, the turn of the face now in front of you is written F.
 
-To line the screen up with your hands, hold the cube with white on top and green in front and press Reset orientation. Settings > Track cube rotations turns all of this off; it uses a little more battery.
+To line the screen up with your hands, hold the cube with white on top and green in front and press Reset orientation. Settings > Devices > Track cube rotations turns all of this off; it uses a little more battery.
 
 ## GAN Smart Timer
 
@@ -75,4 +75,4 @@ If `bluetoothctl show` lists no controller, the adapter itself is stuck. A full 
 
 **A MoYu cube connects but no moves appear.** The address is probably wrong. Disconnect, connect again and enter the address from a scanner app when asked.
 
-**The GAN timer connects but misses starts or stops.** Keep the timer within a couple of metres, and turn on Settings > Share diagnostics before you report it, so the connection steps reach us.
+**The GAN timer connects but misses starts or stops.** Keep the timer within a couple of metres, and turn on Settings > Your data > Share diagnostics before you report it, so the connection steps reach us.

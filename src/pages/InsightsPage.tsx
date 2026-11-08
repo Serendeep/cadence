@@ -17,7 +17,7 @@ const NO_SOLVES: Solve[] = []
 
 /** One sentence that states what changed, with its baseline named. */
 function finding(values: number[], stats: ReturnType<typeof sessionStats>): string {
-  if (!values.length) return 'Do a few solves and your analysis appears here.'
+  if (!values.length) return ''
   const block = values.length >= 100 ? 50 : values.length >= 24 ? 12 : 0
   if (block) {
     const recent = mean(values.slice(-block))
@@ -63,7 +63,7 @@ export function InsightsPage() {
       <div className="pagehead">
         <div>
           <h1>Insights</h1>
-          <p>{finding(values, stats)}</p>
+          {values.length > 0 && <p>{finding(values, stats)}</p>}
         </div>
         <div className="actions">
           <Segmented
@@ -82,7 +82,7 @@ export function InsightsPage() {
       {stats.count === stats.dnf ? (
         <div className="emptystate">
           <h2>Nothing to analyse yet</h2>
-          <p>Your progress, time spread, phase splits and personal bests show up here once you have a few finished solves.</p>
+          <p>Charts appear after a few finished solves.</p>
           <div className="row">
             <a className="btn primary" href="#/timer">Start timing</a>
             <a className="btn" href="#/settings?import">Import from csTimer</a>
@@ -116,7 +116,7 @@ export function InsightsPage() {
         <div className="chart-head">
           <div>
             <h2>Progress</h2>
-            <p className="sub dim" style={{ margin: 0, fontSize: 14 }}>Every single, with your rolling average over it.</p>
+            <p className="sub dim" style={{ margin: 0, fontSize: 14 }}>Singles with a rolling average.</p>
           </div>
           <Segmented id="avg" label="Rolling average" value={avgN} onChange={setAvgN} options={AVG_OPTIONS.map((n) => ({ value: n, label: `ao${n}` }))} />
         </div>
@@ -137,12 +137,12 @@ export function InsightsPage() {
       <div className="grid2 section">
         <section>
           <h2>Where your times land</h2>
-          <p className="sub dim" style={{ margin: '2px 0 14px', fontSize: 14 }}>Solve count per time bucket; the highlighted bar holds your current ao12.</p>
+          <p className="sub dim" style={{ margin: '2px 0 14px', fontSize: 14 }}>The highlighted bar holds your current ao12.</p>
           <Histogram bins={bins} highlight={stats.current[12] !== DNF ? stats.current[12] : null} />
         </section>
         <section>
           <h2>Day by day</h2>
-          <p className="sub dim" style={{ margin: '2px 0 14px', fontSize: 14 }}>Daily mean and best over your last {days.length} practice days.</p>
+          <p className="sub dim" style={{ margin: '2px 0 14px', fontSize: 14 }}>Your last {days.length} practice days.</p>
           <div className="legend" style={{ marginBottom: 8 }}>
             <span><i style={{ background: 'var(--acc)' }} />daily mean</span>
             <span><i style={{ background: 'var(--dim)' }} />daily best</span>
@@ -162,7 +162,7 @@ export function InsightsPage() {
         <h2>Phases</h2>
         {phases && phaseCount ? (
           <>
-            <p className="sub">Average of each phase over your last {phases.count} solves with splits.</p>
+            <p className="sub">Averages over your last {phases.count} solves with splits.</p>
             <PhaseBar splits={phases.means.reduce<number[]>((acc, d) => [...acc, (acc[acc.length - 1] ?? 0) + d], [])} />
             <div className="kpis" style={{ marginTop: 22 }}>
               {phases.means.map((m, i) => (
@@ -176,7 +176,7 @@ export function InsightsPage() {
           </>
         ) : (
           <div className="empty" style={{ marginTop: 12 }}>
-            No phase splits yet. Turn on phases in the timer bar (tap space at the end of each phase), or connect a smart cube for automatic CFOP splits.
+            No splits yet. Turn on phases in the timer bar, or connect a smart cube.
           </div>
         )}
       </section>
@@ -184,12 +184,12 @@ export function InsightsPage() {
       <div className="grid2 section">
         <section>
           <h2>When you practise</h2>
-          <p className="sub dim" style={{ margin: '2px 0 14px', fontSize: 14 }}>Solves by weekday and hour of day.</p>
+          <p className="sub dim" style={{ margin: '2px 0 14px', fontSize: 14 }}>By weekday and hour.</p>
           <Heatmap grid={grid} />
         </section>
         <section>
           <h2>Personal bests</h2>
-          <p className="sub dim" style={{ margin: '2px 0 14px', fontSize: 14 }}>Each solve that set a new best single, latest first.</p>
+          <p className="sub dim" style={{ margin: '2px 0 14px', fontSize: 14 }}>New best singles, latest first.</p>
           {pbs.length ? (
             <table className="solves-table pbtable">
               <tbody>
