@@ -13,6 +13,8 @@ export interface SmartCubeHandlers {
 
 export interface SmartCubeConnection {
   name: string
+  /** The chosen device, so a dropped connection can be reopened without the chooser; absent where the driver cannot reuse it */
+  device?: BluetoothDevice
   /** Tell the cube its current state is solved (GAN only); a no-op where unsupported */
   markSolved: () => void
   disconnect: () => void
@@ -114,6 +116,31 @@ export async function connectStackmat(h: ExternalTimerHandlers, deviceId?: strin
       h.onDisconnect()
     },
   }
+}
+
+/** Waits before each reconnect attempt: three tries over about ten seconds. */
+export const RECONNECT_DELAYS_MS = [1000, 3000, 6000]
+
+const sleep = (ms: number) => new Promise<void>((r) => window.setTimeout(r, ms))
+
+/** Tries `attempt` after each delay in turn; gives the first success, or null once every try fails or `stop()` turns true. */
+export async function retryWithBackoff<T>(
+  attempt: () => Promise<T>,
+  delays: readonly number[],
+  stop: () => boolean,
+  onError: (e: unknown, tryNo: number) => void,
+  wait: (ms: number) => Promise<void> = sleep,
+): Promise<T | null> {
+  for (const [i, ms] of delays.entries()) {
+    await wait(ms)
+    if (stop()) return null
+    try {
+      return await attempt()
+    } catch (e) {
+      onError(e, i + 1)
+    }
+  }
+  return null
 }
 
 export function errorMessage(e: unknown): string {

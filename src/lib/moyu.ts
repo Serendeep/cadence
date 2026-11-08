@@ -150,8 +150,8 @@ async function macFromAdvertisement(device: BluetoothDevice): Promise<string | n
   })
 }
 
-export async function connectMoyu32(h: SmartCubeHandlers, askMac: MacPrompt): Promise<SmartCubeConnection> {
-  const device = await navigator.bluetooth.requestDevice({
+export async function connectMoyu32(h: SmartCubeHandlers, askMac: MacPrompt, chosen?: BluetoothDevice): Promise<SmartCubeConnection> {
+  const device = chosen ?? await navigator.bluetooth.requestDevice({
     filters: [{ namePrefix: 'WCU_MY3' }],
     optionalServices: [MY32_SERVICE],
     optionalManufacturerData: MY32_CICS,
@@ -252,12 +252,12 @@ export async function connectMoyu32(h: SmartCubeHandlers, askMac: MacPrompt): Pr
   rememberMac(name, mac)
   // 0xAC with byte 2 set switches the orientation stream on, cleared switches it off
   await request(172, [0, h.gyro ? 1 : 0])
-  return { name, markSolved: () => undefined, disconnect }
+  return { name, device, markSolved: () => undefined, disconnect }
 }
 
 /** Old MoYu WeiLong AI: each face reports rotation in ninths of a turn; a move is a crossing of the halfway mark. */
-export async function connectMoyuClassic(h: SmartCubeHandlers): Promise<SmartCubeConnection> {
-  const device = await navigator.bluetooth.requestDevice({ filters: [{ namePrefix: 'MHC' }], optionalServices: [MHC_UUID('1000')] })
+export async function connectMoyuClassic(h: SmartCubeHandlers, chosen?: BluetoothDevice): Promise<SmartCubeConnection> {
+  const device = chosen ?? await navigator.bluetooth.requestDevice({ filters: [{ namePrefix: 'MHC' }], optionalServices: [MHC_UUID('1000')] })
   const gatt = await device.gatt!.connect()
   const service = await gatt.getPrimaryService(MHC_UUID('1000'))
   const turn = await service.getCharacteristic(MHC_UUID('1003'))
@@ -284,6 +284,7 @@ export async function connectMoyuClassic(h: SmartCubeHandlers): Promise<SmartCub
   device.addEventListener('gattserverdisconnected', h.onDisconnect)
   return {
     name: device.name ?? 'MoYu WeiLong AI',
+    device,
     markSolved: () => {
       faceStatus.fill(0)
     },

@@ -39,7 +39,9 @@ With a cube connected, the timer page becomes the lab: a 3D cube on one side, yo
 
 **After the solve.** Each phase shows its time and move count, and the live stats show turns per second, moves and rotations. The solve's drawer on the Solves page has the full reconstruction and a 3D replay.
 
-**If the cube and the screen disagree,** for example after you reset the cube by hand, solve the real cube and press Cube is solved.
+**If the cube and the screen disagree,** for example after you reset the cube by hand, solve the real cube and press Mark solved.
+
+**If the timer keeps running after you solve,** the cube's last turn never reached Cadence. Press Finish solve: the solve stops at the last turn that did arrive and is saved.
 
 ### Rotations
 
@@ -74,5 +76,9 @@ sudo systemctl enable --now bluetooth
 If `bluetoothctl show` lists no controller, the adapter itself is stuck. A full power-off (not a restart) usually brings it back.
 
 **A MoYu cube connects but no moves appear.** The address is probably wrong. Disconnect, connect again and enter the address from a scanner app when asked.
+
+**The cube disconnects.** MoYu cubes reconnect by themselves: Cadence tries three times over about ten seconds and tells you how it went. A GAN cube can't be reopened without the device list, so choose the cube again under Settings > Devices. Turns made while the cube was away are lost, so press Mark solved once the real cube is solved again.
+
+If the connection drops during a solve, the timer stops at your last turn and the solve waits for you. Press Finish solve to save it at that time, or Discard to drop it. Nothing is saved until you choose.
 
 **The GAN timer connects but misses starts or stops.** Keep the timer within a couple of metres, and turn on Settings > Your data > Share diagnostics before you report it, so the connection steps reach us.
