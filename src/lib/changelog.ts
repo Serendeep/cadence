@@ -8,6 +8,18 @@ export interface Release {
 /** What each version changed, newest first, in words for people who solve rather than people who code. */
 export const CHANGELOG: Release[] = [
   {
+    version: '0.1.3',
+    date: '2026-11-08',
+    changes: [
+      'Guided drills: from Coach, practise F2L, the last slot, OLL or PLL with scrambles that set up just that step. Pick which PLL cases to drill. Drill solves stay out of your stats.',
+      'Roux: choose your method in Settings > Timing. Smart cubes split Roux solves into first block, second block, CMLL and LSE, and Coach compares them.',
+      'Type times in: choose input > Type times in to record times from another timer.',
+      'Smart cubes reconnect on their own after a dropout. A solve cut off mid-way waits for you to finish or discard it, and Finish solve saves one whose last turn never arrived.',
+      'The desktop app saves a backup every day and keeps the last seven. The web app asks your browser to keep your solves.',
+      'Settings is split into sections, and the text across the app is shorter.',
+    ],
+  },
+  {
     version: '0.1.2',
     date: '2026-11-08',
     changes: [
