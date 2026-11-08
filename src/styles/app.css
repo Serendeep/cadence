@@ -364,7 +364,7 @@ textarea { width: 100%; resize: vertical; min-height: 72px; }
 /* drawer / dialog */
 .backdrop { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.45); z-index: 40; }
 .drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(520px, 100%); background: var(--bg); z-index: 41; overflow: auto; padding: 24px; box-shadow: -20px 0 50px rgba(0, 0, 0, 0.3); }
-.dialog { position: fixed; left: 50%; top: 50%; width: min(440px, calc(100% - 32px)); background: var(--bg); z-index: 41; border-radius: 16px; padding: 24px; box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4); }
+.dialog { position: fixed; left: 50%; top: 50%; width: min(440px, calc(100% - 32px)); max-height: min(640px, calc(100dvh - 32px)); overflow-y: auto; overscroll-behavior: contain; background: var(--bg); z-index: 41; border-radius: 16px; padding: 24px; box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4); }
 .dialog h2, .drawer h2 { margin: 0 0 6px; font-size: 18px; }
 .dialog .row { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
 .devlist { display: grid; gap: 6px; margin-top: 12px; max-height: 280px; overflow: auto; }

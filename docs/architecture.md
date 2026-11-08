@@ -4,8 +4,8 @@ Cadence is one React app that runs in three places: a browser tab, an installed 
 
 ```
 src/            the app (React 19, TypeScript, Vite)
-  pages/        one file per screen: TimerPage, LabView, SolvesPage, InsightsPage, SettingsPage
-  components/   shared UI: charts, the 3D cube, menus, result rows
+  pages/        screen orchestration and timer views: TimerPage, FocusView, LabView, SolvesPage, InsightsPage, SettingsPage
+  components/   shared UI and feature UI: dialogs, solve details, account settings, import preview, timer controls, charts
   hooks/        useTimerEngine (keyboard, touch and external timers), useSessionData
   lib/          everything without UI: storage, devices, cube model, statistics, sync
 electron/       desktop shell: window, app:// protocol, Bluetooth chooser, updates, WCA sign-in window
@@ -30,6 +30,26 @@ All writes go through the functions in `db.ts`. `deleteSolve` and `deleteSession
 ## The timer
 
 `src/lib/timerMachine.ts` is a pure reducer: press, release, tick and cancel events go in, and the next state comes out (idle, holding, ready, inspecting, running, stopped). `useTimerEngine` feeds it from the keyboard, touch and external timers and runs the frame loop that drives the display and the inspection voice. External timers report their own state; the engine mirrors it, and a stop packet that carries a time records the solve even if the start packet was lost.
+
+`pages/TimerPage.tsx` owns scramble history, saving, and choosing between `FocusView` and `LabView`. `pages/timerTypes.ts` defines their shared inputs. Both views use `components/TimerConfigBar.tsx` and `components/ScrambleLine.tsx`; neither imports the timer page. `FocusView` also owns typed entry.
+
+The smart cube view keeps a completed result visible until the stored history catches up. It clears that temporary result when the session or latest saved solve changes, so deleting a solve cannot bring an old result back.
+
+## UI ownership
+
+| Change | Module |
+| --- | --- |
+| Dialog sizing, animation, Escape and keyboard focus | `components/Dialog.tsx`, `hooks/useModalFocus.ts`, `.dialog` in `styles/app.css` |
+| Solve list, paging and session actions | `pages/SolvesPage.tsx` |
+| Solve details, penalties, comments and replay | `components/SolveDrawer.tsx` |
+| Settings navigation and import/export execution | `pages/SettingsPage.tsx` |
+| WCA account, sync status and account deletion controls | `components/AccountSettings.tsx` |
+| Import preview and confirmation | `components/ImportDialog.tsx` |
+| Shared settings row layout | `components/SettingsRow.tsx` |
+
+Shared UI belongs in `components/`; importing it from a page ties unrelated screens together. Pages compose these modules directly, without re-exporting them.
+
+`useSessionData` owns session reads and statistics. It removes confirmed local deletions from the visible history immediately, then discards that temporary filter once IndexedDB catches up. Keep this behavior in the hook so the timer and solve list stay consistent.
 
 ## Devices
 
@@ -61,3 +81,5 @@ Electron loads the built app from a custom `app://` scheme, so it has a real ori
 `worker/index.ts` routes `/api/log` to the diagnostics logger and other `/api/*` paths to `api.ts`; everything else is a static file from `dist/`. Sign-in and sync are described in [sync.md](sync.md).
 
 Diagnostics (`src/lib/diag.ts`) are off unless the user turns them on. Batches go to `/api/log` and appear in Workers Logs, one line per entry.
+
+Client sync requests time out after 30 seconds. A timeout releases the syncing state and allows a retry; the client advances its saved push checkpoint only after the full sync succeeds. `src/lib/syncTimeout.test.ts` covers a stalled request followed by a successful retry.

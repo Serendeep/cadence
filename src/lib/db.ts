@@ -10,7 +10,14 @@ export interface Tombstone {
 }
 
 const changeListeners = new Set<() => void>()
+const solveDeletedListeners = new Set<(id: number) => void>()
 let quiet = false
+
+/** Reports a completed local deletion so open views can update before their history reload finishes. */
+export function onSolveDeleted(listener: (id: number) => void): () => void {
+  solveDeletedListeners.add(listener)
+  return () => { solveDeletedListeners.delete(listener) }
+}
 
 /** Calls `l` after local edits to sessions or solves, but not after writes that came from sync. */
 export function onDbChange(l: () => void): () => void {
@@ -115,6 +122,7 @@ export async function deleteSolve(id: number): Promise<void> {
     await db.tombstones.bulkPut(tombstonesFor('solve', solve ? [solve] : []))
     await db.solves.delete(id)
   })
+  solveDeletedListeners.forEach((listener) => listener(id))
 }
 
 export const sessionSolves = (sessionId: number) => db.solves.where('[sessionId+date]').between([sessionId, Dexie.minKey], [sessionId, Dexie.maxKey]).toArray()

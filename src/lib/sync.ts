@@ -18,6 +18,7 @@ const RATE_LIMIT_WAIT_MS = 15_000
 const RATE_LIMIT_RETRIES = 12
 const DEBOUNCE_MS = 2000
 const PERIODIC_MS = 5 * 60 * 1000
+const REQUEST_TIMEOUT_MS = 30_000
 // re-send edits from just before the last push, in case one was being written while that push read the database
 const PUSH_OVERLAP_MS = 1000
 // these describe this device, not the solver, so they never sync
@@ -110,7 +111,7 @@ class StorageFull extends Error {}
 class RateLimited extends Error {}
 
 async function api<T>(path: string, init: RequestInit = {}, token = state.token): Promise<T> {
-  const res = await fetch(API + path, { ...init, headers: { ...init.headers, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } })
+  const res = await fetch(API + path, { ...init, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS), headers: { ...init.headers, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } })
   if (res.status === 401) throw new SignedOut()
   if (res.status === 507) throw new StorageFull()
   if (res.status === 429) throw new RateLimited()
@@ -277,6 +278,7 @@ export async function syncNow(): Promise<void> {
         toast('Signed out of sync. Sign in again in Settings to keep your devices in step.', undefined, 8000)
       } else {
         if (e instanceof StorageFull) toast('Your account has reached its sync storage limit. New solves stay on this device.', undefined, 8000)
+        if (e instanceof Error && e.name === 'TimeoutError') toast('Sync took too long. Check your connection and try Sync now again.', undefined, 8000)
         update({ status: 'error' })
       }
     } finally {

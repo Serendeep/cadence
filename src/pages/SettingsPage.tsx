@@ -1,21 +1,23 @@
+import { AccountSettings } from '../components/AccountSettings'
+import { ImportDialog, type ImportPreview } from '../components/ImportDialog'
+import { SettingsRow } from '../components/SettingsRow'
 import { AnimatePresence } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 import { Segmented, Switch } from '../components/Bits'
 import { clearAll, db, importData, matchSession } from '../lib/db'
 import { connectCube, connectExternal, disconnectCube, disconnectExternal, useDevices, type CubeKind } from '../lib/deviceStore'
 import { bluetoothAvailable } from '../lib/devices'
-import { eventById } from '../lib/events'
-import { makeBackup, parseImport, toCstimer, withoutDuplicates, type ImportedData } from '../lib/importExport'
+import { makeBackup, parseImport, toCstimer, withoutDuplicates } from '../lib/importExport'
 import { setSettings, useSettings, type CoachFocus, type ThemeName } from '../lib/settings'
 import { phaseNames } from '../lib/cfop'
 import { toast } from '../lib/toast'
 import { installApp, useCanInstall } from '../lib/pwa'
 import { hasAutoBackups, openBackups } from '../lib/backups'
-import { deleteAccountData, resolveAccountSwitch, signIn, signOut, syncNow, useSync } from '../lib/sync'
+import { signOut } from '../lib/sync'
 import { playCall, VOICES } from '../lib/voice'
 import { REPO_URL, shareCadence } from '../lib/notices'
 import { WhatsNew } from '../components/WhatsNew'
-import { Dialog } from './SolvesPage'
+import { Dialog } from '../components/Dialog'
 
 // a phase focus was measured on the other method's splits, so switching method ends it
 const keepFocus = (f: CoachFocus | null) => (f?.kind.startsWith('phase-') ? null : f)
@@ -39,123 +41,6 @@ function download(name: string, data: unknown) {
 
 const stamp = () => new Date().toISOString().slice(0, 10)
 
-interface ImportPreview {
-  file: string
-  data: ImportedData
-  duplicates: number
-  /** Per imported session: true when it tops up a session already here */
-  merges: boolean[]
-}
-
-const dateRange = (dates: number[]) => {
-  if (!dates.length) return ''
-  const fmt = (d: number) => new Date(d).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
-  const [from, to] = [fmt(Math.min(...dates)), fmt(Math.max(...dates))]
-  return from === to ? `from ${from}` : `${from} to ${to}`
-}
-
-/** What a file holds, before anything is written. */
-function ImportDialog({ preview, onCancel, onConfirm }: { preview: ImportPreview; onCancel: () => void; onConfirm: () => void }) {
-  const { data, duplicates } = preview
-  const counts = data.sessions.map((_, i) => data.solves.filter((s) => s.sessionIndex === i).length)
-  const nothing = data.solves.length === 0
-  return (
-    <Dialog title={nothing ? 'Nothing new to import' : `Import ${data.solves.length.toLocaleString()} solves?`} onClose={onCancel}>
-      <p className="dim">
-        {nothing
-          ? `Every solve in ${preview.file} is already here.`
-          : `${preview.file}, solves ${dateRange(data.solves.map((s) => s.date))}.`}
-        {duplicates > 0 && !nothing && ` ${duplicates.toLocaleString()} solves you already have are skipped.`}
-        {data.skipped > 0 && ` ${data.skipped.toLocaleString()} unreadable rows are skipped.`}
-      </p>
-      {!nothing && (
-        <ul className="import-list">
-          {data.sessions.map((s, i) => (
-            <li key={i}>
-              <span>
-                {s.name}
-                {eventById(s.event).short !== s.name && <span className="dim"> · {eventById(s.event).short}</span>}
-              </span>
-              <span className="dim">{preview.merges[i] ? 'adds to yours' : 'new session'}</span>
-              <b className="num">{counts[i].toLocaleString()}</b>
-            </li>
-          ))}
-        </ul>
-      )}
-      <div className="row">
-        <button type="button" className="btn" onClick={onCancel}>{nothing ? 'Close' : 'Cancel'}</button>
-        {!nothing && <button type="button" className="btn primary" onClick={onConfirm} autoFocus>Import</button>}
-      </div>
-    </Dialog>
-  )
-}
-
-function syncStatus(status: string, lastSynced: number | null): string {
-  if (status === 'syncing') return 'Syncing…'
-  if (status === 'error') return 'Could not reach the sync server. Your solves are safe here and sync when it is back.'
-  return lastSynced ? `Last synced ${new Date(lastSynced).toLocaleString()}` : 'Not synced yet'
-}
-
-/** Sign-in and sync; data stays on this device either way. */
-function AccountRow() {
-  const sync = useSync()
-  const [confirmWipe, setConfirmWipe] = useState(false)
-  const switchDialog = (
-    <AnimatePresence>
-      {sync.switching && (
-        <Dialog title={`Add this device's solves to ${sync.switching.to}?`} onClose={() => resolveAccountSwitch(false)}>
-          <p className="dim">
-            This device last synced with {sync.switching.from}'s account. Signing in as {sync.switching.to} uploads every session and solve on this device into {sync.switching.to}'s account.
-          </p>
-          <div className="row">
-            <button type="button" className="btn" onClick={() => resolveAccountSwitch(false)}>Don't sign in</button>
-            <button type="button" className="btn primary" onClick={() => resolveAccountSwitch(true)}>Add them</button>
-          </div>
-        </Dialog>
-      )}
-    </AnimatePresence>
-  )
-  if (!sync.token) {
-    return (
-      <Row id="account" title="Sync across devices" desc="Sign in with your WCA account to sync sessions, solves and settings. Without it, everything stays on this device.">
-        <button type="button" className="btn primary" onClick={() => void signIn()}>Sign in with WCA</button>
-        {switchDialog}
-      </Row>
-    )
-  }
-  const who = sync.account ? `${sync.account.name}${sync.account.wcaId ? ` · ${sync.account.wcaId}` : ''}` : 'Signed in'
-  return (
-    <Row id="account" title={who} desc={syncStatus(sync.status, sync.lastSynced)}>
-      <button type="button" className="btn" disabled={sync.status === 'syncing'} onClick={() => void syncNow()}>Sync now</button>
-      <button type="button" className="btn" onClick={() => void signOut().then(() => toast('Signed out. Your solves stay on this device.'))}>Sign out</button>
-      <button type="button" className="btn danger" onClick={() => setConfirmWipe(true)}>Delete synced data</button>
-      <AnimatePresence>
-        {confirmWipe && (
-          <Dialog title="Delete your synced data?" onClose={() => setConfirmWipe(false)}>
-            <p className="dim">This erases the copy of your sessions, solves and settings kept for syncing and signs out every device. Each device keeps the solves it already has.</p>
-            <div className="row">
-              <button type="button" className="btn" onClick={() => setConfirmWipe(false)}>Keep it</button>
-              <button
-                type="button"
-                className="btn danger"
-                onClick={() => {
-                  setConfirmWipe(false)
-                  deleteAccountData().then(
-                    () => toast('Synced data deleted. This device keeps its solves.'),
-                    () => toast('Could not delete the synced data. Check your connection and try again.'),
-                  )
-                }}
-              >
-                Delete synced data
-              </button>
-            </div>
-          </Dialog>
-        )}
-      </AnimatePresence>
-    </Row>
-  )
-}
-
 /** Scrolls its row into view once, for links that land on a specific setting. */
 function ScrollHere({ when }: { when: boolean }) {
   const ref = useRef<HTMLSpanElement>(null)
@@ -163,18 +48,6 @@ function ScrollHere({ when }: { when: boolean }) {
     if (when) ref.current?.closest('.setting')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
   }, [when])
   return <span ref={ref} hidden />
-}
-
-function Row({ title, desc, children, id }: { title: string; desc?: string; children: React.ReactNode; id?: string }) {
-  return (
-    <div className="setting" id={id}>
-      <div>
-        <h3>{title}</h3>
-        {desc && <p>{desc}</p>}
-      </div>
-      <div className="ctl">{children}</div>
-    </div>
-  )
 }
 
 const SECTIONS = [
@@ -303,18 +176,18 @@ export function SettingsPage() {
           <h2 ref={heading} tabIndex={-1}>{SECTIONS.find((x) => x.id === active)!.label}</h2>
           {active === 'account' && (
             <>
-          <AccountRow />
+          <AccountSettings />
 
           {canInstall && (
-            <Row title="Install the app" desc="Opens in its own window and works offline.">
+            <SettingsRow title="Install the app" desc="Opens in its own window and works offline.">
               <button type="button" className="btn primary" onClick={() => void installApp()}>Install</button>
-            </Row>
+            </SettingsRow>
           )}
             </>
           )}
           {active === 'appearance' && (
             <>
-          <Row title="Theme" desc="System uses paper in light mode and graphite in dark.">
+          <SettingsRow title="Theme" desc="System uses paper in light mode and graphite in dark.">
             <button type="button" className="swatch" aria-pressed={s.theme === 'system'} onClick={() => setSettings({ theme: 'system' })}>
               <span style={{ background: 'linear-gradient(90deg, #f2f1ee 50%, #141416 50%)', padding: '8px 10px', fontSize: 18, fontWeight: 500 }}>
                 <em className="split-sample">12.84</em>
@@ -333,16 +206,16 @@ export function SettingsPage() {
                 </button>
               )
             })}
-          </Row>
+          </SettingsRow>
             </>
           )}
           {active === 'timing' && (
             <>
-          <Row title="Inspection" desc="15 seconds. +2 after 15 s, DNF after 17 s. Off for blindfolded events.">
+          <SettingsRow title="Inspection" desc="15 seconds. +2 after 15 s, DNF after 17 s. Off for blindfolded events.">
             <Switch label="Inspection" checked={s.inspection} onChange={(v) => setSettings({ inspection: v })} />
-          </Row>
+          </SettingsRow>
 
-          <Row title="Inspection calls" desc="Calls out 8 s and 12 s.">
+          <SettingsRow title="Inspection calls" desc="Calls out 8 s and 12 s.">
             <Segmented
               id="voice"
               label="Inspection voice"
@@ -353,13 +226,13 @@ export function SettingsPage() {
               }}
               options={VOICES.map((v) => ({ value: v, label: v }))}
             />
-          </Row>
+          </SettingsRow>
 
-          <Row title="Keep the screen on">
+          <SettingsRow title="Keep the screen on">
             <Switch label="Keep the screen on" checked={s.keepAwake} onChange={(v) => setSettings({ keepAwake: v })} />
-          </Row>
+          </SettingsRow>
 
-          <Row title="Hold to start" desc="How long to hold before the time turns green.">
+          <SettingsRow title="Hold to start" desc="How long to hold before the time turns green.">
             <Segmented
               id="hold"
               label="Hold time"
@@ -367,9 +240,9 @@ export function SettingsPage() {
               onChange={(v) => setSettings({ holdMs: v })}
               options={[0, 300, 550, 1000].map((v) => ({ value: v, label: v ? `${v / 1000} s` : 'instant' }))}
             />
-          </Row>
+          </SettingsRow>
 
-          <Row title="While solving" desc="Hide the running time if it distracts you.">
+          <SettingsRow title="While solving" desc="Hide the running time if it distracts you.">
             <Segmented
               id="upd"
               label="Timer display while solving"
@@ -381,9 +254,9 @@ export function SettingsPage() {
                 { value: 'hidden', label: 'hidden' },
               ]}
             />
-          </Row>
+          </SettingsRow>
 
-          <Row title="Method" desc="Names the four phases and how a smart cube splits them.">
+          <SettingsRow title="Method" desc="Names the four phases and how a smart cube splits them.">
             <Segmented
               id="method"
               label="Method"
@@ -393,9 +266,9 @@ export function SettingsPage() {
               }}
               options={[{ value: 'cfop', label: 'CFOP' }, { value: 'roux', label: 'Roux' }]}
             />
-          </Row>
+          </SettingsRow>
 
-          <Row title="Phases" desc={`Tap space to end each phase. Four phases are ${phaseNames(4, s.method).join(', ')}.`}>
+          <SettingsRow title="Phases" desc={`Tap space to end each phase. Four phases are ${phaseNames(4, s.method).join(', ')}.`}>
             <Segmented
               id="phases"
               label="Phases"
@@ -403,27 +276,27 @@ export function SettingsPage() {
               onChange={(v) => setSettings({ phases: v })}
               options={[1, 2, 3, 4].map((v) => ({ value: v, label: v === 1 ? 'off' : String(v) }))}
             />
-          </Row>
+          </SettingsRow>
 
-          <Row title="Decimals">
+          <SettingsRow title="Decimals">
             <Segmented id="dec" label="Decimals" value={s.decimals} onChange={(v) => setSettings({ decimals: v })} options={[{ value: 2, label: '0.01' }, { value: 3, label: '0.001' }]} />
-          </Row>
+          </SettingsRow>
 
-          <Row title="Scramble preview">
+          <SettingsRow title="Scramble preview">
             <Switch label="Scramble preview" checked={s.scramblePreview} onChange={(v) => setSettings({ scramblePreview: v })} />
-          </Row>
+          </SettingsRow>
             </>
           )}
           {active === 'coach' && (
             <>
-          <Row title="Coach" desc="Finds what costs you the most time and suggests a drill. Sums up each sitting after a 10-minute break.">
+          <SettingsRow title="Coach" desc="Finds what costs you the most time and suggests a drill. Sums up each sitting after a 10-minute break.">
             <Switch label="Coach" checked={s.coach} onChange={(v) => setSettings({ coach: v })} />
-          </Row>
+          </SettingsRow>
             </>
           )}
           {active === 'devices' && (
             <>
-          <Row
+          <SettingsRow
             id="devices"
             title="Timers and smart cubes"
             desc={
@@ -454,51 +327,51 @@ export function SettingsPage() {
                 Disconnect
               </button>
             )}
-          </Row>
+          </SettingsRow>
 
-          <Row title="Track cube rotations" desc="On gyroscope cubes, the on-screen cube turns with yours. Takes effect on the next connect.">
+          <SettingsRow title="Track cube rotations" desc="On gyroscope cubes, the on-screen cube turns with yours. Takes effect on the next connect.">
             <Switch label="Track cube rotations" checked={s.trackRotations} onChange={(v) => setSettings({ trackRotations: v })} />
-          </Row>
+          </SettingsRow>
             </>
           )}
           {active === 'data' && (
             <>
-          <Row id="import" title="Import from csTimer" desc="A csTimer export or a Cadence backup. Drop it here or pick the file. You see a preview first, and solves you already have are skipped.">
+          <SettingsRow id="import" title="Import from csTimer" desc="A csTimer export or a Cadence backup. Drop it here or pick the file. You see a preview first, and solves you already have are skipped.">
             <ScrollHere when={location.hash.endsWith('?import')} />
             <input ref={file} type="file" accept=".json,.txt,application/json,text/plain" className="visually-hidden" id="import-file" onChange={(e) => e.target.files?.[0] && void onImport(e.target.files[0])} />
             <button type="button" className="btn primary" disabled={busy} onClick={() => file.current?.click()}>
               {busy ? 'Importing…' : 'Choose file'}
             </button>
-          </Row>
+          </SettingsRow>
 
-          <Row title="Export" desc="A Cadence backup, or a file for csTimer.">
+          <SettingsRow title="Export" desc="A Cadence backup, or a file for csTimer.">
             <button type="button" className="btn" onClick={() => void exportAll('backup')}>Backup (.json)</button>
             <button type="button" className="btn" onClick={() => void exportAll('cstimer')}>csTimer format</button>
-          </Row>
+          </SettingsRow>
 
           {hasAutoBackups() && (
-            <Row title="Automatic backups" desc="A backup a day, the last 7 kept.">
+            <SettingsRow title="Automatic backups" desc="A backup a day, the last 7 kept.">
               <button type="button" className="btn" onClick={openBackups}>Open folder</button>
-            </Row>
+            </SettingsRow>
           )}
 
-          <Row title="Delete everything" desc="Removes sessions and solves from this device and signs it out. Your synced copy stays.">
+          <SettingsRow title="Delete everything" desc="Removes sessions and solves from this device and signs it out. Your synced copy stays.">
             <button type="button" className="btn danger" onClick={() => setConfirmClear(true)}>Delete all data</button>
-          </Row>
+          </SettingsRow>
 
-          <Row title="Share diagnostics" desc="Sends device connection logs and errors to help fix bugs. Never your solves, times or name.">
+          <SettingsRow title="Share diagnostics" desc="Sends device connection logs and errors to help fix bugs. Never your solves, times or name.">
             <Switch label="Share diagnostics" checked={s.shareDiagnostics} onChange={(v) => setSettings({ shareDiagnostics: v })} />
-          </Row>
+          </SettingsRow>
             </>
           )}
           {active === 'about' && (
             <>
-          <Row title={`Cadence ${__APP_VERSION__}`} desc="Free software, GPL v3 or later. Uses cubing.js and gan-web-bluetooth. Device drivers and voices adapted from csTimer by Shuang Chen.">
+          <SettingsRow title={`Cadence ${__APP_VERSION__}`} desc="Free software, GPL v3 or later. Uses cubing.js and gan-web-bluetooth. Device drivers and voices adapted from csTimer by Shuang Chen.">
             <WhatsNew />
             <a className="btn" href={REPO_URL} target="_blank" rel="noreferrer">Star on GitHub</a>
             <button type="button" className="btn" onClick={() => void shareCadence()}>Share</button>
             <a className="btn" href="https://buymeacoffee.com/serendeep" target="_blank" rel="noreferrer">Buy me a coffee</a>
-          </Row>
+          </SettingsRow>
             </>
           )}
         </div>

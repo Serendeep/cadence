@@ -1,6 +1,6 @@
 import { useLiveQuery } from 'dexie-react-hooks'
-import { useEffect, useMemo } from 'react'
-import { db, ensureSession, sessionSolves } from '../lib/db'
+import { useEffect, useMemo, useState } from 'react'
+import { db, ensureSession, onSolveDeleted, sessionSolves } from '../lib/db'
 import { setSettings, useSettings } from '../lib/settings'
 import { sessionStats } from '../lib/stats'
 import { solveValue } from '../lib/time'
@@ -29,7 +29,18 @@ export function useSessionData(): SessionData {
   }, [sessions, sessionId])
 
   const session = sessions?.find((s) => s.id === sessionId)
-  const solves = useLiveQuery(() => (session?.id != null ? sessionSolves(session.id) : NO_SOLVES), [session?.id]) ?? NO_SOLVES
+  const history = useLiveQuery(() => (session?.id != null ? sessionSolves(session.id) : NO_SOLVES), [session?.id]) ?? NO_SOLVES
+  const [deleted, setDeleted] = useState<ReadonlySet<number>>(() => new Set())
+  useEffect(() => onSolveDeleted((id) => setDeleted((ids) => new Set([...ids, id]))), [])
+  // A large IndexedDB history can take a second to reload; reflect confirmed deletions straight away.
+  const solves = useMemo(
+    () => deleted.size ? history.filter((solve) => solve.id == null || !deleted.has(solve.id)) : history,
+    [history, deleted],
+  )
+  // Once the query catches up, its rows become the sole source of truth again.
+  if (deleted.size && !history.some((solve) => solve.id != null && deleted.has(solve.id))) {
+    setDeleted(new Set())
+  }
   const values = useMemo(() => solves.map(solveValue), [solves])
   const stats = useMemo(() => sessionStats(values), [values])
   return { sessions: sessions ?? [], session, solves, values, stats, loading: !sessions }

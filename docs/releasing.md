@@ -31,7 +31,7 @@ Installed web apps pick up a new deploy the next time they load. They show a Rel
 
 ## Desktop releases
 
-The `desktop` workflow builds every push on macOS (Intel runner), Windows and Linux to catch packaging breaks. Releases come from tags:
+The `desktop` workflow checks macOS packaging on branch pushes. The `release` workflow builds Windows, macOS and Linux from tags:
 
 ```bash
 npm version patch       # or minor; commits and tags vX.Y.Z

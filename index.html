@@ -14,5 +14,14 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      if (location.hostname === 'timer.serendeep.app') {
+        const beacon = document.createElement('script')
+        beacon.type = 'module'
+        beacon.src = 'https://static.cloudflareinsights.com/beacon.min.js'
+        beacon.dataset.cfBeacon = JSON.stringify({ token: 'ea97989da85b4531bbb84caa0dbef507' })
+        document.head.appendChild(beacon)
+      }
+    </script>
   </body>
 </html>

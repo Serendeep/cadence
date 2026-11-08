@@ -1,7 +1,7 @@
 import { AnimatePresence } from 'motion/react'
 import { useEffect, useState } from 'react'
 import { CHANGELOG } from '../lib/changelog'
-import { Dialog } from '../pages/SolvesPage'
+import { Dialog } from './Dialog'
 
 const HASH = '?whats-new'
 

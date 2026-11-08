@@ -12,14 +12,16 @@ import { rouxProgress } from '../lib/roux'
 import { finishSolve, newTracker, resetTracker, scrambleHint, solveOpen, trackMove, type SmartFinish, type Tracker } from '../lib/smartSolve'
 import { createRotationDetector, rotationsPerPhase, solverFrame, timeline } from '../lib/rotations'
 import { inspectionPenalty } from '../lib/timerMachine'
-import { formatMs } from '../lib/time'
-import type { TimedMove } from '../lib/types'
+import { effective, formatMs } from '../lib/time'
+import type { Solve, TimedMove } from '../lib/types'
 import { inspectionCaller, preloadCalls } from '../lib/voice'
 import { Twisty, type TwistyHandle } from '../components/Cube'
 import { CoachCard } from '../components/Coach'
 import { DrillBanner } from '../components/DrillBanner'
 import { Results } from '../components/Results'
-import { ConfigBar, ScrambleLine, type ViewProps } from './TimerPage'
+import { TimerConfigBar } from '../components/TimerConfigBar'
+import { ScrambleLine } from '../components/ScrambleLine'
+import type { TimerViewProps } from './timerTypes'
 
 /** How far into CFOP the cube is right now, colour neutral: 0 none, 1 cross, 2 F2L, 3 OLL. */
 function cfopProgress(cube: CubeState): number {
@@ -32,10 +34,11 @@ function cfopProgress(cube: CubeState): number {
   return best
 }
 
-export function LabView({ data, settings, drill, scramble, scrambleError, onNewScramble, onPrevious, save }: ViewProps) {
+export function LabView({ data, settings, drill, scramble, scrambleError, onNewScramble, onPrevious, save }: TimerViewProps) {
   const devices = useDevices()
   const [tracker, setTrackerState] = useState<Tracker | null>(null)
   const [now, setNow] = useState(0)
+  const [completed, setCompleted] = useState<{ previousId: number | undefined; solve: Solve } | null>(null)
   const [inspStart, setInspStart] = useState<number | null>(null)
   const [reached, setReached] = useState<number[]>([])
   const twisty = useRef<TwistyHandle | null>(null)
@@ -89,16 +92,29 @@ export function LabView({ data, settings, drill, scramble, scrambleError, onNewS
       const insp = inspRef.current
       setInspStart(null)
       setNow(finished.time)
-      save({
+      const result = {
         time: finished.time,
         penalty: insp != null ? inspectionPenalty(t.start - insp) : 'ok',
         splits: finished.splits,
         moves: finished.moves,
         rotations: rotationsRef.current,
-        source: 'smartcube',
+        source: 'smartcube' as const,
+      }
+      // Keep the result visible while saving and reloading a large solve history.
+      setCompleted({
+        previousId: data.solves.at(-1)?.id,
+        solve: {
+          ...result,
+          sessionId: data.session?.id ?? 0,
+          scramble: scramble ?? '',
+          event: data.session?.event ?? '333',
+          date: Date.now(),
+          method,
+        },
       })
+      save(result)
     },
-    [save],
+    [save, data.solves, data.session, scramble, method],
   )
 
   const onMove = useCallback(
@@ -143,7 +159,7 @@ export function LabView({ data, settings, drill, scramble, scrambleError, onNewS
   }, [link, setPaused])
 
   useEffect(() => onCubeMove(onMove), [onMove])
-  const busy = tracker?.phase === 'solving' || inspStart != null
+  const busy = (tracker != null && solveOpen(tracker)) || inspStart != null
   useEffect(() => setSolving(busy), [busy])
   useEffect(() => () => setSolving(false), [])
   useEffect(() => {
@@ -167,7 +183,7 @@ export function LabView({ data, settings, drill, scramble, scrambleError, onNewS
     const loop = () => {
       const t = trackerRef.current
       const insp = inspRef.current
-      if (t?.phase === 'solving') {
+      if (t?.phase === 'solving' && solveOpen(t)) {
         if (!pausedRef.current) setNow(performance.now() - t.start)
       } else if (insp != null) {
         const elapsed = performance.now() - insp
@@ -200,22 +216,25 @@ export function LabView({ data, settings, drill, scramble, scrambleError, onNewS
     setInspStart(null)
   }
 
-  const solving = tracker?.phase === 'solving'
-  const open = tracker != null && solveOpen(tracker)
+  const solving = tracker != null && solveOpen(tracker)
+  const open = solving
   const moves = tracker?.moves ?? []
-  const last = data.solves[data.solves.length - 1]
+  const savedLast = data.solves.at(-1)
+  const pending = completed && completed.solve.sessionId === data.session?.id && completed.previousId === savedLast?.id
+  if (completed && !pending) setCompleted(null)
+  const last = pending ? completed.solve : savedLast
   const display = solving
     ? formatMs(now, settings.decimals)
     : inspStart != null
       ? inspectionLabel(now)
       : last
-        ? formatMs(last.penalty === 'dnf' ? Infinity : last.time + (last.penalty === '+2' ? 2000 : 0), settings.decimals)
+        ? formatMs(effective(last.time, last.penalty), settings.decimals)
         : formatMs(0, settings.decimals)
   const tps = solving && now > 0 ? moves.length / (now / 1000) : last?.moves && last.time ? last.moves.length / (last.time / 1000) : 0
   const hint = tracker ? scrambleHint(tracker) : null
   const lastSplits = !solving && last?.splits?.length === 4 ? last.splits : null
   const phaseEnds = solving ? reached : lastSplits ?? []
-  const shownMethod = lastSplits ? last.method ?? 'cfop' : method
+  const shownMethod = lastSplits ? last?.method ?? 'cfop' : method
   const lastMoveCounts = !solving && last?.moves && lastSplits ? movesPerPhase(last.moves.map((m) => m.t), lastSplits) : null
   const lastRotationCounts = !solving && last?.rotations && lastSplits ? rotationsPerPhase(last.rotations, lastSplits) : null
   const shownRotations = solving ? rotations.length : last?.rotations?.length
@@ -261,7 +280,7 @@ export function LabView({ data, settings, drill, scramble, scrambleError, onNewS
           Disconnect
         </button>
         <span style={{ flex: 1 }} />
-        <ConfigBar data={data} settings={settings} />
+        <TimerConfigBar data={data} settings={settings} />
         {drill && <DrillBanner drill={drill} solves={data.solves} decimals={settings.decimals} />}
       </div>
 

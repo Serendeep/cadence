@@ -8,6 +8,17 @@ export interface Release {
 /** What each version changed, newest first, in words for people who solve rather than people who code. */
 export const CHANGELOG: Release[] = [
   {
+    version: '0.1.4',
+    date: '2026-11-08',
+    changes: [
+      'The changelog fits smaller screens and scrolls inside the popup.',
+      'Deleting a solve updates the timer and solve list without waiting for the full history to reload. Undo still restores it.',
+      'Smart cube results appear as soon as you finish, including splits and inspection penalties.',
+      'A stalled sync request times out after 30 seconds so you can retry.',
+      'Separated timer views, shared dialogs, solve details and settings features to make the code easier to maintain.',
+    ],
+  },
+  {
     version: '0.1.3',
     date: '2026-11-08',
     changes: [
