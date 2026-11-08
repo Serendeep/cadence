@@ -98,7 +98,7 @@ export function makeBackup(sessions: Session[], solves: Solve[]): Backup {
   return { app: BACKUP_APP, version: 1, exported: Date.now(), sessions, solves }
 }
 
-const SOURCES: readonly InputSource[] = ['keyboard', 'touch', 'stackmat', 'smartcube', 'gantimer', 'import']
+const SOURCES: readonly InputSource[] = ['keyboard', 'touch', 'stackmat', 'smartcube', 'gantimer', 'typing', 'import']
 const timedMoves = (v: unknown): TimedMove[] | undefined =>
   Array.isArray(v) && v.every((m) => isObj(m) && typeof m.m === 'string' && finite(m.t)) ? (v as TimedMove[]) : undefined
 
