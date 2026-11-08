@@ -44,7 +44,7 @@ export function InsightsPage() {
   const days = useMemo(() => byDay(solves).slice(-60), [solves])
   const pbs = useMemo(() => pbHistory(solves).slice(-8).reverse(), [solves])
   const phaseCount = useMemo(() => commonPhaseCount(solves), [solves])
-  const phases = useMemo(() => (phaseCount ? phaseAverages(solves, phaseCount) : null), [solves, phaseCount])
+  const phases = useMemo(() => (phaseCount ? phaseAverages(solves, phaseCount, settings.method) : null), [solves, phaseCount, settings.method])
   const grid = useMemo(() => practiceGrid(solves), [solves])
   const bins = useMemo(() => histogram(values), [values])
   const dec = settings.decimals
@@ -163,11 +163,11 @@ export function InsightsPage() {
         {phases && phaseCount ? (
           <>
             <p className="sub">Averages over your last {phases.count} solves with splits.</p>
-            <PhaseBar splits={phases.means.reduce<number[]>((acc, d) => [...acc, (acc[acc.length - 1] ?? 0) + d], [])} />
+            <PhaseBar method={settings.method} splits={phases.means.reduce<number[]>((acc, d) => [...acc, (acc[acc.length - 1] ?? 0) + d], [])} />
             <div className="kpis" style={{ marginTop: 22 }}>
               {phases.means.map((m, i) => (
                 <div className="kpi" key={i}>
-                  {phaseNames(phaseCount)[i]}
+                  {phaseNames(phaseCount, settings.method)[i]}
                   <b>{formatMs(m, dec)}</b>
                   <small>{((m / phases.means.reduce((a, b) => a + b, 0)) * 100).toFixed(0)}% of the solve</small>
                 </div>

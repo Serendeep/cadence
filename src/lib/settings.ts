@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react'
+import { METHODS, type Method } from './cfop'
 import { DRILLS, type FindingKind } from './coach'
 import { DRILL_KINDS, type DrillKind } from './types'
 import { VOICES, type Voice } from './voice'
@@ -33,6 +34,8 @@ export interface Settings {
   inspectionVoice: Voice
   holdMs: number
   phases: number
+  /** Names the four phases and picks how a smart cube splits them */
+  method: Method
   timerUpdate: TimerUpdate
   input: InputMethod
   sessionId: number | null
@@ -53,6 +56,7 @@ const DEFAULTS: Settings = {
   inspectionVoice: 'male',
   holdMs: 300,
   phases: 1,
+  method: 'cfop',
   timerUpdate: 'live',
   input: 'keyboard',
   sessionId: null,
@@ -94,6 +98,7 @@ function sanitize(raw: unknown): Settings {
   if (!isCoachFocus(out.coachFocus)) out.coachFocus = null
   if (!isDrillMode(out.drill)) out.drill = null
   if (!THEMES.includes(out.theme as ThemeName)) out.theme = DEFAULTS.theme
+  if (!METHODS.includes(out.method as Method)) out.method = DEFAULTS.method
   // older versions stored an on/off switch
   if (src.inspectionVoice === false) out.inspectionVoice = 'off'
   if (!VOICES.includes(out.inspectionVoice as Voice)) out.inspectionVoice = DEFAULTS.inspectionVoice

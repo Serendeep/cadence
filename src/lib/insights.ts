@@ -1,4 +1,4 @@
-import { phaseDurations } from './cfop'
+import { phaseDurations, type Method } from './cfop'
 import { DNF, solveValue } from './time'
 import type { Solve } from './types'
 
@@ -66,9 +66,9 @@ export interface PhaseAverages {
   means: number[]
 }
 
-/** Mean phase durations over the latest `limit` finished solves that carry `phases` splits. */
-export function phaseAverages(solves: readonly Solve[], phases: number, limit = 50): PhaseAverages | null {
-  const withSplits = solves.filter((s) => s.penalty !== 'dnf' && s.splits?.length === phases).slice(-limit)
+/** Mean phase durations over the latest `limit` finished solves that carry `phases` splits; four splits must be from `method`. */
+export function phaseAverages(solves: readonly Solve[], phases: number, method: Method = 'cfop', limit = 50): PhaseAverages | null {
+  const withSplits = solves.filter((s) => s.penalty !== 'dnf' && s.splits?.length === phases && (phases !== 4 || (s.method ?? 'cfop') === method)).slice(-limit)
   if (!withSplits.length) return null
   const sums = Array<number>(phases).fill(0)
   for (const s of withSplits) phaseDurations(s.splits!).forEach((d, i) => (sums[i] += d))

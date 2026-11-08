@@ -35,7 +35,7 @@ With a cube connected, the timer page becomes the lab: a 3D cube on one side, yo
 
 **Scrambling.** The whole scramble stays on screen. Moves you have done fade, and the next one is underlined; a dotted underline means you have made half of a double turn. If you turn the wrong way, Cadence shows the moves that undo it, and the scramble picks up again once you have.
 
-**Solving.** The timer starts on your first turn after the scramble and stops the moment the cube is solved. With inspection on, inspection starts when the scramble is done. Cross, F2L, OLL and PLL fill in as you reach them, on whichever colour you solve from.
+**Solving.** The timer starts on your first turn after the scramble and stops the moment the cube is solved. With inspection on, inspection starts when the scramble is done. Cross, F2L, OLL and PLL fill in as you reach them, on whichever colour you solve from. With the method set to Roux in Settings > Timing, the phases are First block, Second block, CMLL and LSE. Cadence finds your blocks on any side and colour, and M moves (which reach Cadence as turns of both outer layers) don't break them. CMLL counts as done once the top corners match the blocks, even before the last U turn.
 
 **After the solve.** Each phase shows its time and move count, and the live stats show turns per second, moves and rotations. The solve's drawer on the Solves page has the full reconstruction and a 3D replay.
 

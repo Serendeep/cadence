@@ -1,4 +1,4 @@
-import { CFOP_PHASES, phaseDurations } from './cfop'
+import { METHOD_PHASES, phaseDurations, type Method } from './cfop'
 import { DNF, solveValue } from './time'
 import type { Solve } from './types'
 
@@ -50,7 +50,9 @@ function median(v: readonly number[]): number {
 
 const sec = (ms: number) => `${(ms / 1000).toFixed(2)} s`
 
-const cfopSolves = (solves: readonly Solve[]) => finished(solves).filter((s) => s.splits?.length === 4)
+// CFOP and Roux phases are different steps, so only splits from one method are compared
+const methodSolves = (solves: readonly Solve[], method: Method) =>
+  finished(solves).filter((s) => s.splits?.length === 4 && (s.method ?? 'cfop') === method)
 
 function phaseMeans(solves: readonly Solve[]): number[] {
   const sums = [0, 0, 0, 0]
@@ -74,8 +76,8 @@ function bestStretch(solves: readonly Solve[]): Solve[] {
   return solves.slice(bestEnd - PHASE_WINDOW + 1, bestEnd + 1)
 }
 
-function phaseFindings(solves: readonly Solve[]): Finding[] {
-  const split = cfopSolves(solves)
+function phaseFindings(solves: readonly Solve[], method: Method): Finding[] {
+  const split = methodSolves(solves, method)
   if (split.length < MIN_SPLIT_SOLVES) return []
   const recent = split.slice(-PHASE_WINDOW)
   const now = phaseMeans(recent)
@@ -85,7 +87,7 @@ function phaseFindings(solves: readonly Solve[]): Finding[] {
     if (gain < MIN_GAIN_MS) return []
     return [{
       kind: `phase-${i}` as FindingKind,
-      title: `${CFOP_PHASES[i]} is ${sec(gain)} slower than at your best`,
+      title: `${METHOD_PHASES[method][i]} is ${sec(gain)} slower than at your best`,
       detail: `${sec(m)} over your last ${PHASE_WINDOW} solves, against ${sec(then[i])} in your best stretch.`,
       gain,
       metric: m,
@@ -187,14 +189,14 @@ function sittingFindings(solves: readonly Solve[]): Finding[] {
 }
 
 /** What holds these solves back, biggest per-solve gain first. `solves` must be one event, in date order. */
-export function findings(solves: readonly Solve[]): Finding[] {
-  return [...phaseFindings(solves), ...consistencyFinding(solves), ...sittingFindings(solves)].sort((a, b) => b.gain - a.gain)
+export function findings(solves: readonly Solve[], method: Method = 'cfop'): Finding[] {
+  return [...phaseFindings(solves, method), ...consistencyFinding(solves), ...sittingFindings(solves)].sort((a, b) => b.gain - a.gain)
 }
 
 /** The current value of a finding's metric over `solves`, or null while there are too few to tell. */
-export function measure(kind: FindingKind, solves: readonly Solve[]): number | null {
+export function measure(kind: FindingKind, solves: readonly Solve[], method: Method = 'cfop'): number | null {
   if (kind.startsWith('phase-')) {
-    const split = cfopSolves(solves).slice(-PHASE_WINDOW)
+    const split = methodSolves(solves, method).slice(-PHASE_WINDOW)
     return split.length >= PHASE_WINDOW / 2 ? phaseMeans(split)[Number(kind.slice(6))] : null
   }
   if (kind === 'consistency') {
@@ -272,6 +274,49 @@ export const DRILLS: Record<FindingKind, Drill> = {
     ],
   },
 }
+
+const ROUX_DRILLS: Record<'phase-0' | 'phase-1' | 'phase-2' | 'phase-3', Drill> = {
+  'phase-0': {
+    title: 'Plan the first block in inspection',
+    minutes: 10,
+    steps: [
+      'Scramble, then use the full 15 seconds to plan the whole first block. Start only when you can say every move.',
+      'Solve just the first block without looking at the cube. Check it, then scramble again.',
+      'Once that feels easy, also find the first pair of the second block before you start.',
+    ],
+  },
+  'phase-1': {
+    title: 'Second block with no pauses',
+    minutes: 15,
+    steps: [
+      'Build the second block slowly enough that you never stop turning.',
+      'While you insert one pair, find the next. If you pause, slow down more.',
+      'Do 12 solves like this, then a timed average of 5 at your normal speed.',
+    ],
+  },
+  'phase-2': {
+    title: 'Drill the CMLL cases you hesitate on',
+    minutes: 10,
+    steps: [
+      'Write down the CMLL cases you recognise slowly or stop in the middle of.',
+      'Set each one up and solve it 10 times, from a different angle each time.',
+      'Then mix the cases in random order, so you practise recognising them as well as executing them.',
+    ],
+  },
+  'phase-3': {
+    title: 'Practise EOLR',
+    minutes: 10,
+    steps: [
+      'Scramble only the last six edges: do random M and U moves on a solved cube.',
+      'Before you turn, plan edge orientation so it also brings UL and UR to the bottom, ready to go up together.',
+      'Do 20 like this, then time a few full solves and plan EOLR the same way.',
+    ],
+  },
+}
+
+/** The drill for a finding, using the method's version for phase findings. */
+export const drillFor = (kind: FindingKind, method: Method): Drill =>
+  method === 'roux' && kind.startsWith('phase-') ? ROUX_DRILLS[kind as keyof typeof ROUX_DRILLS] : DRILLS[kind]
 
 export interface SittingSummary {
   count: number

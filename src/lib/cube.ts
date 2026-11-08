@@ -124,3 +124,52 @@ export function ollSolved(state: CubeState, face: Face): boolean {
   const axis = n.findIndex((v) => v !== 0)
   return f2lSolved(state, face) && state.filter((s) => s.n[axis] === -n[axis]).every(stickerSolved)
 }
+
+const axisOf = (f: Face) => NORMALS[f].findIndex((v) => v !== 0)
+const inLayer = (p: Vec, f: Face) => p[axisOf(f)] === NORMALS[f][axisOf(f)]
+const isCorner = (p: Vec) => p.every((v) => v !== 0)
+const QUARTERS = ['', '', '2', "'"]
+const turn = (state: CubeState, f: Face, k: number) => (k ? applyMove(state, f + QUARTERS[k]) : state)
+
+export const opposite = (f: Face): Face => faceOfNormal(NORMALS[f].map((v) => -v) as unknown as Vec)
+
+/** Faces that can sit under a block on `side`: the four around it. */
+export const sideFaces = (f: Face): Face[] => FACES.filter((g) => axisOf(g) !== axisOf(f))
+
+/**
+ * Quarter turns of `side` that put its 1x2x3 Roux block (the side layer minus the row opposite `bottom`) home,
+ * or -1 when the block is not built. Smart cubes report M as turns of both side layers, so a built block can sit turned.
+ */
+export function blockTurns(state: CubeState, side: Face, bottom: Face): number {
+  const top = opposite(bottom)
+  for (let k = 0; k < 4; k++) {
+    if (turn(state, side, k).every((s) => !inLayer(s.p, side) || inLayer(s.p, top) || stickerSolved(s))) return k
+  }
+  return -1
+}
+
+/** The state with both Roux blocks (on `side` and its opposite, over `bottom`) turned home, or null unless both are built and line up. */
+function homeBlocks(state: CubeState, side: Face, bottom: Face): CubeState | null {
+  const a = blockTurns(state, side, bottom)
+  const b = blockTurns(state, opposite(side), bottom)
+  // opposite faces turn the opposite way, so equal offsets add to a whole turn: an M-slice offset, not a broken pair
+  if (a < 0 || b < 0 || (a + b) % 4) return null
+  return turn(turn(state, side, a), opposite(side), b)
+}
+
+export const blocksSolved = (state: CubeState, side: Face, bottom: Face) => homeBlocks(state, side, bottom) !== null
+
+/** Both blocks built and the four top corners solved against them, allowing a turn of the top layer. */
+export function cmllSolved(state: CubeState, side: Face, bottom: Face): boolean {
+  const home = homeBlocks(state, side, bottom)
+  if (!home) return false
+  const top = opposite(bottom)
+  return [0, 1, 2, 3].some((k) => turn(home, top, k).every((s) => !inLayer(s.p, top) || !isCorner(s.p) || stickerSolved(s)))
+}
+
+/** The start state followed by the state after each move. */
+export function replay(start: CubeState, moves: readonly { m: string }[]): CubeState[] {
+  const states: CubeState[] = [start]
+  for (const mv of moves) states.push(applyMove(states[states.length - 1], mv.m))
+  return states
+}

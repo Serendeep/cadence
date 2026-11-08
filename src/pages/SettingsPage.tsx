@@ -6,7 +6,8 @@ import { connectCube, connectExternal, disconnectCube, disconnectExternal, useDe
 import { bluetoothAvailable } from '../lib/devices'
 import { eventById } from '../lib/events'
 import { makeBackup, parseImport, toCstimer, withoutDuplicates, type ImportedData } from '../lib/importExport'
-import { setSettings, useSettings, type ThemeName } from '../lib/settings'
+import { setSettings, useSettings, type CoachFocus, type ThemeName } from '../lib/settings'
+import { phaseNames } from '../lib/cfop'
 import { toast } from '../lib/toast'
 import { installApp, useCanInstall } from '../lib/pwa'
 import { hasAutoBackups, openBackups } from '../lib/backups'
@@ -15,6 +16,9 @@ import { playCall, VOICES } from '../lib/voice'
 import { REPO_URL, shareCadence } from '../lib/notices'
 import { WhatsNew } from '../components/WhatsNew'
 import { Dialog } from './SolvesPage'
+
+// a phase focus was measured on the other method's splits, so switching method ends it
+const keepFocus = (f: CoachFocus | null) => (f?.kind.startsWith('phase-') ? null : f)
 
 const THEME_SWATCH: Record<Exclude<ThemeName, 'system'>, [string, string, string]> = {
   graphite: ['#141416', '#ecebe8', '#e2b714'],
@@ -379,7 +383,19 @@ export function SettingsPage() {
             />
           </Row>
 
-          <Row title="Phases" desc="Tap space to end each phase. Four phases are cross, F2L, OLL and PLL.">
+          <Row title="Method" desc="Names the four phases and how a smart cube splits them.">
+            <Segmented
+              id="method"
+              label="Method"
+              value={s.method}
+              onChange={(v) => {
+                if (v !== s.method) setSettings({ method: v, coachFocus: keepFocus(s.coachFocus) })
+              }}
+              options={[{ value: 'cfop', label: 'CFOP' }, { value: 'roux', label: 'Roux' }]}
+            />
+          </Row>
+
+          <Row title="Phases" desc={`Tap space to end each phase. Four phases are ${phaseNames(4, s.method).join(', ')}.`}>
             <Segmented
               id="phases"
               label="Phases"

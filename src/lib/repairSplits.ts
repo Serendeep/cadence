@@ -1,4 +1,4 @@
-import { detectCfop } from './cfop'
+import { detectSplits } from './cfop'
 import { db } from './db'
 import { scrambledState } from './smartSolve'
 
@@ -20,9 +20,9 @@ export async function repairSmartCubeSplits(): Promise<number> {
   await db.transaction('rw', db.solves, async () => {
     for (const s of solves) {
       // null when the stored moves do not solve the stored scramble, e.g. the cube was out of step; leave those alone
-      const cfop = s.id != null ? detectCfop(scrambledState(s.scramble), s.moves!) : null
-      if (!cfop) continue
-      const splits = cfop.splits.map((v) => Math.min(v, s.time))
+      const found = s.id != null ? detectSplits(s.method ?? 'cfop', scrambledState(s.scramble), s.moves!) : null
+      if (!found) continue
+      const splits = found.map((v) => Math.min(v, s.time))
       if (splits.join() === s.splits?.join()) continue
       await db.solves.update(s.id!, { splits })
       fixed++

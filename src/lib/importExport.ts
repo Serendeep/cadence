@@ -1,3 +1,4 @@
+import { METHODS, type Method } from './cfop'
 import { DRILL_KINDS, type DrillKind, type InputSource, type Penalty, type Session, type Solve, type TimedMove } from './types'
 
 /** cstimer scramble-type ids mapped to WCA / cubing.js event ids. */
@@ -113,6 +114,7 @@ export function solveFields(v: Record<string, unknown>): Omit<Solve, 'id' | 'ses
     date: finite(v.date) ? v.date : Date.now(),
     comment: typeof v.comment === 'string' ? v.comment : undefined,
     splits: Array.isArray(v.splits) && v.splits.every(finite) ? (v.splits as number[]) : undefined,
+    method: METHODS.includes(v.method as Method) ? (v.method as Method) : undefined,
     moves: timedMoves(v.moves),
     rotations: timedMoves(v.rotations),
     source: SOURCES.includes(v.source as InputSource) ? (v.source as InputSource) : undefined,

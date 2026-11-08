@@ -1,11 +1,21 @@
-import { applyMove, crossSolved, f2lSolved, FACES, isSolved, ollSolved, type CubeState, type Face } from './cube'
+import { crossSolved, f2lSolved, FACES, isSolved, ollSolved, replay, type CubeState, type Face } from './cube'
+import { detectRoux } from './roux'
 import type { TimedMove } from './types'
 
+export type Method = 'cfop' | 'roux'
+export const METHODS: readonly Method[] = ['cfop', 'roux']
 export const CFOP_PHASES = ['Cross', 'F2L', 'OLL', 'PLL'] as const
+export const ROUX_PHASES = ['First block', 'Second block', 'CMLL', 'LSE'] as const
+export const METHOD_PHASES: Record<Method, readonly string[]> = { cfop: CFOP_PHASES, roux: ROUX_PHASES }
 
-/** Labels for n timing phases: the CFOP steps for four, numbered otherwise. */
-export function phaseNames(n: number): string[] {
-  return n === 4 ? [...CFOP_PHASES] : Array.from({ length: n }, (_, i) => `Phase ${i + 1}`)
+/** Labels for n timing phases: the method's steps for four, numbered otherwise. */
+export function phaseNames(n: number, method: Method = 'cfop'): string[] {
+  return n === 4 ? [...METHOD_PHASES[method]] : Array.from({ length: n }, (_, i) => `Phase ${i + 1}`)
+}
+
+/** Phase end times in ms for a smart-cube solve, by the solver's method; null when the moves do not solve `start`. */
+export function detectSplits(method: Method, start: CubeState, moves: readonly TimedMove[]): number[] | null {
+  return (method === 'roux' ? detectRoux(start, moves) : detectCfop(start, moves))?.splits ?? null
 }
 
 export interface PhaseResult {
@@ -22,8 +32,7 @@ export interface PhaseResult {
  * Picks the face whose F2L completed first; each phase ends the first time its state is reached on that face.
  */
 export function detectCfop(start: CubeState, moves: readonly TimedMove[]): PhaseResult | null {
-  const states: CubeState[] = [start]
-  for (const mv of moves) states.push(applyMove(states[states.length - 1], mv.m))
+  const states = replay(start, moves)
   const end = states.length - 1
   if (!isSolved(states[end])) return null
 

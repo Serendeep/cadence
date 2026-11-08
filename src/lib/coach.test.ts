@@ -22,6 +22,16 @@ test('names the phase that slowed down against the best stretch', () => {
   expect(measure('phase-1', slowF2l)).toBeCloseTo(9500)
 })
 
+test('compares phases only between solves split with the same method', () => {
+  const cfop = Array.from({ length: 60 }, (_, i) => solve(14000, i * MIN, [2000, 8000, 2000, 2000]))
+  const roux = Array.from({ length: 20 }, (_, i) => ({ ...solve(15500, (60 + i) * MIN, [3000, 5000, 3000, 4500]), method: 'roux' as const }))
+  const all = [...cfop, ...roux]
+  expect(findings(all, 'cfop').some((f) => f.kind.startsWith('phase-'))).toBe(false)
+  expect(findings(all, 'roux').some((f) => f.kind.startsWith('phase-'))).toBe(false)
+  expect(measure('phase-3', all, 'roux')).toBeCloseTo(4500)
+  expect(measure('phase-3', all, 'cfop')).toBeCloseTo(2000)
+})
+
 test('stays quiet when there is too little data or nothing to fix', () => {
   expect(findings(practice(1, 10, () => 12000))).toEqual([])
   expect(findings(practice(5, 40, () => 12000))).toEqual([])

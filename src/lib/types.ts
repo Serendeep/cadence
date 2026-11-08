@@ -1,3 +1,5 @@
+import type { Method } from './cfop'
+
 export type Penalty = 'ok' | '+2' | 'dnf'
 
 export type InputSource = 'keyboard' | 'touch' | 'stackmat' | 'smartcube' | 'gantimer' | 'typing' | 'import'
@@ -33,6 +35,8 @@ export interface Solve extends Synced {
   comment?: string
   /** Cumulative phase end times in ms; the last entry equals `time` */
   splits?: number[]
+  /** Method the four splits belong to; missing means CFOP */
+  method?: Method
   moves?: TimedMove[]
   /** Whole-cube rotations (x, y', z2…) from a gyroscope cube, kept apart from moves so move counts and TPS stay pure */
   rotations?: TimedMove[]
