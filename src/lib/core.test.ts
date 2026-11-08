@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, test } from 'vitest'
 import { averageOf, histogram, meanOf, rollingAverage, sessionStats } from './stats'
-import { DNF, effective, formatMs, parseTime } from './time'
+import { DNF, effective, formatMs, parseTime, parseTyped } from './time'
 import { applyAlg, invertAlg, isSolved, solvedCube, stateKey, faceGrid } from './cube'
 import { detectCfop } from './cfop'
 import { initialTimer, timerReducer, type TimerConfig, type TimerEvent, type TimerState } from './timerMachine'
@@ -142,4 +142,16 @@ describe('rolling averages', () => {
       values.forEach((_, i) => expect(fast[i]).toBe(i + 1 < n ? null : averageOf(values.slice(0, i + 1), n)))
     }
   })
+})
+
+test('reads typed times the way csTimer does', () => {
+  expect(parseTyped('1234')).toEqual({ time: 12340, penalty: 'ok' })
+  expect(parseTyped('12345')).toEqual({ time: 83450, penalty: 'ok' })
+  expect(parseTyped('45')).toEqual({ time: 450, penalty: 'ok' })
+  expect(parseTyped('12.34+')).toEqual({ time: 12340, penalty: '+2' })
+  expect(parseTyped('1:02.5')).toEqual({ time: 62500, penalty: 'ok' })
+  expect(parseTyped('DNF')).toEqual({ time: 0, penalty: 'dnf' })
+  expect(parseTyped('0')).toBeNull()
+  expect(parseTyped('12.3.4')).toBeNull()
+  expect(parseTyped('')).toBeNull()
 })

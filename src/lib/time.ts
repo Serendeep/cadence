@@ -48,3 +48,25 @@ export function parseTime(input: string): number | null {
 export function formatDate(epoch: number): string {
   return new Date(epoch).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
 }
+
+const MAX_TYPED_MS = 24 * 60 * 60 * 1000
+
+/**
+ * A time typed into the timer, read the way csTimer reads it: digits alone fill from the right (1234 is 12.34, 12345 is 1:23.45),
+ * "12.34" and "1:02.50" work as written, a trailing + adds two seconds and "DNF" is a DNF. Null when unreadable.
+ */
+export function parseTyped(input: string): { time: number; penalty: Penalty } | null {
+  const v = input.trim().replace(/\s+/g, '')
+  if (/^dnf$/i.test(v)) return { time: 0, penalty: 'dnf' }
+  const plus = v.endsWith('+')
+  const body = plus ? v.slice(0, -1) : v
+  let time: number | null
+  if (/^\d+$/.test(body)) {
+    const d = body.padStart(5, '0')
+    time = (Number(d.slice(0, -4)) * 60 + Number(d.slice(-4, -2))) * 1000 + Number(d.slice(-2)) * 10
+  } else {
+    time = parseTime(body)
+  }
+  if (time == null || time === DNF || time <= 0 || time >= MAX_TYPED_MS) return null
+  return { time, penalty: plus ? '+2' : 'ok' }
+}

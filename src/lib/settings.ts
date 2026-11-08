@@ -4,7 +4,7 @@ import { VOICES, type Voice } from './voice'
 
 const THEMES = ['system', 'graphite', 'nord', 'paper', 'matcha', 'mono-light'] as const
 export type ThemeName = (typeof THEMES)[number]
-export type InputMethod = 'keyboard' | 'stackmat' | 'smartcube' | 'gantimer'
+export type InputMethod = 'keyboard' | 'typing' | 'stackmat' | 'smartcube' | 'gantimer'
 export type TimerUpdate = 'live' | 'seconds' | 'hidden'
 
 /** The finding the solver chose to work on, with its metric when they started, so Coach can show before and after. */

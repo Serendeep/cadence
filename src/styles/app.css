@@ -427,3 +427,10 @@ textarea { width: 100%; resize: vertical; min-height: 72px; }
 /* a toast takes the card's spot, so the card moves up over it instead of under it */
 body:has(.toast) .coach-card { bottom: 96px; }
 @media (max-width: 720px) { body:has(.toast) .coach-card { bottom: calc(140px + env(safe-area-inset-bottom)); } }
+.typed { display: flex; flex-direction: column; align-items: center; }
+.typed-input { font-size: clamp(64px, min(12vw, 18vh), 160px); width: min(100%, 6.5ch); background: none; border: 0; border-bottom: 2px solid var(--line); text-align: center; color: var(--fg); padding: 0; outline: none; }
+.typed-input:focus { border-bottom-color: var(--acc); }
+.typed-input::placeholder { color: var(--faint); }
+.typed-input.bad { border-bottom-color: var(--bad); }
+.typed-help { margin: 14px 0 0; color: var(--faint); font-size: 14px; }
+.typed-help.bad { color: var(--bad); }
