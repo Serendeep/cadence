@@ -1,6 +1,6 @@
 export type Penalty = 'ok' | '+2' | 'dnf'
 
-export type InputSource = 'keyboard' | 'touch' | 'stackmat' | 'smartcube' | 'gantimer' | 'import'
+export type InputSource = 'keyboard' | 'touch' | 'stackmat' | 'smartcube' | 'gantimer' | 'typing' | 'import'
 
 export interface TimedMove {
   /** Move in WCA notation, e.g. "R'" */

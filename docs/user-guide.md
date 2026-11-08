@@ -20,6 +20,10 @@ The result appears with OK, +2 and DNF buttons and a delete button. Penalties ch
 
 The arrow next to "Next scramble" goes back to the previous scramble, and the copy button copies the current one.
 
+### Typing times in
+
+To record times from another timer, choose input > Type times in. Type the time and press Enter. Cadence reads times the way csTimer does: digits alone fill from the right, so `1234` is 12.34 and `12345` is 1:23.45. `12.34` and `1:02.50` work as written, a trailing `+` adds two seconds (`12.34+`), and `DNF` saves a DNF.
+
 ### Inspection
 
 Turn on Inspection in Settings, or tap "inspection off" above the scramble. Pressing space starts the WCA 15 seconds. A voice calls out 8 and 12 seconds; pick male, female or off. Starting after 15 seconds adds +2, and after 17 seconds the solve is a DNF. Blindfolded events skip inspection.

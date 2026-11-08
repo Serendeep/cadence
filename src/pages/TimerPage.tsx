@@ -10,7 +10,7 @@ import { nextScramble } from '../lib/scramble'
 import { setSettings, useSettings, type InputMethod, type Settings } from '../lib/settings'
 import { scrambledState } from '../lib/smartSolve'
 import { isFocused, type TimerResult } from '../lib/timerMachine'
-import { effective, formatMs } from '../lib/time'
+import { effective, formatMs, parseTyped } from '../lib/time'
 import { toast } from '../lib/toast'
 import type { InputSource, Penalty, TimedMove } from '../lib/types'
 import { CoachCard } from '../components/Coach'
@@ -30,7 +30,7 @@ export interface SaveInput {
   source: InputSource
 }
 
-const INPUT_LABEL: Record<InputMethod, string> = { keyboard: 'keyboard', stackmat: 'stackmat', gantimer: 'gan timer', smartcube: 'smart cube' }
+const INPUT_LABEL: Record<InputMethod, string> = { keyboard: 'keyboard', typing: 'typing', stackmat: 'stackmat', gantimer: 'gan timer', smartcube: 'smart cube' }
 
 /** Owns the scramble and saving; shows the Lab view when a smart cube is connected on a 3x3 event. */
 export function TimerPage({ onFocusChange }: { onFocusChange: (f: boolean) => void }) {
@@ -145,6 +145,7 @@ export function ScrambleLine({ scramble, scrambleError, onNewScramble, onPreviou
 function FocusView({ data, settings, scramble, scrambleError, onNewScramble, onPrevious, save, onFocusChange }: ViewProps & { onFocusChange: (f: boolean) => void }) {
   const devices = useDevices()
   const external = devices.external != null && (settings.input === 'stackmat' || settings.input === 'gantimer')
+  const typing = settings.input === 'typing'
   const source: InputSource = external ? (devices.external!.kind === 'stackmat' ? 'stackmat' : 'gantimer') : 'keyboard'
   const onFinish = useCallback((r: TimerResult) => save({ ...r, source }), [save, source])
   const engine = useTimerEngine(
@@ -154,7 +155,7 @@ function FocusView({ data, settings, scramble, scrambleError, onNewScramble, onP
       phases: external ? 1 : settings.phases,
       voice: settings.inspectionVoice,
       source: external ? 'external' : 'manual',
-      enabled: true,
+      enabled: !typing,
     },
     onFinish,
   )
@@ -180,6 +181,7 @@ function FocusView({ data, settings, scramble, scrambleError, onNewScramble, onP
 
   const tone = signal ?? (state.phase === 'holding' ? 'hold' : state.phase === 'ready' ? 'ready' : state.phase === 'inspecting' && now > 12000 ? 'insp-warn' : '')
   const hint = (() => {
+    if (typing) return ''
     if (state.phase === 'running' && settings.phases > 1 && !external) return `phase ${state.splits.length + 1} of ${settings.phases}`
     if (state.phase === 'inspecting') return external ? 'Start the timer when ready' : 'Hold space to get ready'
     if (state.phase !== 'idle') return ''
@@ -199,6 +201,9 @@ function FocusView({ data, settings, scramble, scrambleError, onNewScramble, onP
       </div>
 
       <div className="stage">
+        {typing ? (
+          <TypedEntry onSave={(r) => save({ ...r, source: 'typing' })} />
+        ) : (
         <motion.div
           className={`bigtime ${tone}`}
           animate={{ scale: state.phase === 'running' ? 1.06 : state.phase === 'ready' ? 0.98 : 1 }}
@@ -207,6 +212,7 @@ function FocusView({ data, settings, scramble, scrambleError, onNewScramble, onP
         >
           {display}
         </motion.div>
+        )}
         <div className="hint chrome">{hint}</div>
         <TimerSides solves={data.solves} values={data.values} stats={data.stats} decimals={dec} />
       </div>
@@ -223,9 +229,9 @@ function FocusView({ data, settings, scramble, scrambleError, onNewScramble, onP
             <a href="#/settings?devices">Connect a timer or cube</a>
           </div>
         )}
-        <div className="keys">
+        {!typing && <div className="keys">
           <kbd>space</kbd> start · <kbd>esc</kbd> cancel · any key stops
-        </div>
+        </div>}
       </div>
 
       {settings.scramblePreview && scramble && (
@@ -300,6 +306,7 @@ export function ConfigBar({ data, settings }: { data: SessionData; settings: Set
         trigger={<>input <b>{inputLabel}</b></>}
         items={[
           { key: 'kb', label: 'Keyboard and touch', checked: settings.input === 'keyboard', onSelect: () => chooseInput('keyboard') },
+          { key: 'ty', label: 'Type times in', checked: settings.input === 'typing', onSelect: () => chooseInput('typing') },
           { key: 'sm', label: 'Stackmat (audio jack)', checked: settings.input === 'stackmat', onSelect: () => chooseInput('stackmat') },
           ...(bt
             ? [
@@ -324,5 +331,40 @@ export function ConfigBar({ data, settings }: { data: SessionData; settings: Set
         }))}
       />
     </div>
+  )
+}
+
+/** Manual entry: type a time and press Enter. Replaces the big time while the input is "typing". */
+function TypedEntry({ onSave }: { onSave: (r: { time: number; penalty: Penalty }) => void }) {
+  const [text, setText] = useState('')
+  const [bad, setBad] = useState(false)
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault()
+    const r = parseTyped(text)
+    setBad(r == null)
+    if (!r) return
+    onSave(r)
+    setText('')
+  }
+  return (
+    <form className="typed" onSubmit={submit}>
+      <input
+        className={`bigtime typed-input ${bad ? 'bad' : ''}`}
+        value={text}
+        onChange={(e) => {
+          setText(e.target.value)
+          setBad(false)
+        }}
+        placeholder="0.00"
+        inputMode="decimal"
+        enterKeyHint="done"
+        autoComplete="off"
+        aria-label="Time"
+        aria-invalid={bad}
+        aria-describedby="typed-help"
+        autoFocus
+      />
+      <p id="typed-help" className={`typed-help ${bad ? 'bad' : ''}`}>{bad ? 'Try 12.34, 1234, 1:02.50, 12.34+ or DNF' : 'Type a time and press Enter'}</p>
+    </form>
   )
 }
