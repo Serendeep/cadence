@@ -24,3 +24,5 @@ export function dismissToast(): void {
 }
 
 export const useToast = () => useSyncExternalStore((l) => (listeners.add(l), () => listeners.delete(l)), () => current)
+
+export const hasToast = (): boolean => current != null

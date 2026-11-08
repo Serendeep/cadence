@@ -102,3 +102,5 @@ Sign out keeps your solves on the device. Delete synced data erases the copy kep
 ## Installing
 
 See [Install](../README.md#install) in the README for phones, browsers and the desktop apps.
+
+After an update, the timer offers a short **What's new** list; it opens only if you tap it. The same list, the version you run, and links to star the project on GitHub or share it are under Settings > About. Once you have used Cadence for a while (100 solves over 3 days, then 300 solves), it asks once each whether you would star it and share it. Closing either message means it never asks again.

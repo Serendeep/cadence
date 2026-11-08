@@ -421,3 +421,9 @@ textarea { width: 100%; resize: vertical; min-height: 72px; }
 .coach-card-head { display: flex; justify-content: space-between; align-items: baseline; }
 .coach-card .row { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
 @media (max-width: 720px) { .coach-card { bottom: calc(72px + env(safe-area-inset-bottom)); } }
+.changelog section + section { margin-top: 18px; }
+.changelog h3 { font-size: 15px; font-weight: 600; margin: 0 0 6px; }
+.changelog ul { margin: 0; padding-left: 20px; color: var(--dim); font-size: 14px; line-height: 1.6; }
+/* a toast takes the card's spot, so the card moves up over it instead of under it */
+body:has(.toast) .coach-card { bottom: 96px; }
+@media (max-width: 720px) { body:has(.toast) .coach-card { bottom: calc(140px + env(safe-area-inset-bottom)); } }

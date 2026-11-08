@@ -11,6 +11,8 @@ import { toast } from '../lib/toast'
 import { installApp, useCanInstall } from '../lib/pwa'
 import { deleteAccountData, resolveAccountSwitch, signIn, signOut, syncNow, useSync } from '../lib/sync'
 import { playCall, VOICES } from '../lib/voice'
+import { REPO_URL, shareCadence } from '../lib/notices'
+import { WhatsNew } from '../components/WhatsNew'
 import { Dialog } from './SolvesPage'
 
 const THEME_SWATCH: Record<Exclude<ThemeName, 'system'>, [string, string, string]> = {
@@ -399,10 +401,13 @@ export function SettingsPage() {
         <Switch label="Share diagnostics" checked={s.shareDiagnostics} onChange={(v) => setSettings({ shareDiagnostics: v })} />
       </Row>
 
-      <Row title="About" desc="Free software under the GNU GPL v3 or later. If Cadence helps your solving, you can support its development.">
+      <Row title={`About Cadence ${__APP_VERSION__}`} desc="Free software under the GNU GPL v3 or later. If Cadence helps your solving, a star, a share or a coffee all help it grow.">
         <p className="dim" style={{ fontSize: 14, margin: 0, maxWidth: 560 }}>
           Scrambles and 3D cubes by cubing.js. GAN Bluetooth by gan-web-bluetooth. MoYu and GAN timer drivers, the Stackmat protocol and the inspection voices are adapted from csTimer by Shuang Chen.
         </p>
+        <WhatsNew />
+        <a className="btn" href={REPO_URL} target="_blank" rel="noreferrer">Star on GitHub</a>
+        <button type="button" className="btn" onClick={() => void shareCadence()}>Share</button>
         <a className="btn" href="https://buymeacoffee.com/serendeep" target="_blank" rel="noreferrer">Buy me a coffee</a>
       </Row>
 
