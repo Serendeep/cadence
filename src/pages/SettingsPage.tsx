@@ -9,6 +9,7 @@ import { makeBackup, parseImport, toCstimer, withoutDuplicates, type ImportedDat
 import { setSettings, useSettings, type ThemeName } from '../lib/settings'
 import { toast } from '../lib/toast'
 import { installApp, useCanInstall } from '../lib/pwa'
+import { hasAutoBackups, openBackups } from '../lib/backups'
 import { deleteAccountData, resolveAccountSwitch, signIn, signOut, syncNow, useSync } from '../lib/sync'
 import { playCall, VOICES } from '../lib/voice'
 import { REPO_URL, shareCadence } from '../lib/notices'
@@ -458,6 +459,12 @@ export function SettingsPage() {
             <button type="button" className="btn" onClick={() => void exportAll('backup')}>Backup (.json)</button>
             <button type="button" className="btn" onClick={() => void exportAll('cstimer')}>csTimer format</button>
           </Row>
+
+          {hasAutoBackups() && (
+            <Row title="Automatic backups" desc="A backup a day, the last 7 kept.">
+              <button type="button" className="btn" onClick={openBackups}>Open folder</button>
+            </Row>
+          )}
 
           <Row title="Delete everything" desc="Removes sessions and solves from this device and signs it out. Your synced copy stays.">
             <button type="button" className="btn danger" onClick={() => setConfirmClear(true)}>Delete all data</button>
