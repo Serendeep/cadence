@@ -1,13 +1,14 @@
 import { AnimatePresence, motion } from 'motion/react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { inspectionLabel } from '../hooks/useTimerEngine'
-import { CFOP_PHASES } from '../lib/cfop'
+import { METHOD_PHASES } from '../lib/cfop'
 import { crossSolved, f2lSolved, FACES, ollSolved, type CubeState } from '../lib/cube'
 import { disconnectCube, markCubeSolved, onCubeMove, onCubeOrientation, resetCubeOrientation, useDevices } from '../lib/deviceStore'
 import { diag } from '../lib/diag'
 import { isBlind } from '../lib/events'
 import { setSettings } from '../lib/settings'
 import { setSolving } from '../lib/solving'
+import { rouxProgress } from '../lib/roux'
 import { newTracker, resetTracker, scrambleHint, trackMove, type Tracker } from '../lib/smartSolve'
 import { createRotationDetector, rotationsPerPhase, solverFrame, timeline } from '../lib/rotations'
 import { inspectionPenalty } from '../lib/timerMachine'
@@ -73,13 +74,14 @@ export function LabView({ data, settings, scramble, scrambleError, onNewScramble
   }, [scramble, setTracker])
 
 
+  const { method } = settings
   const onMove = useCallback(
     (m: string, at: number) => {
       const t = trackerRef.current
       if (!t) return
       twisty.current?.addMove(m)
       detector.current.faceTurn(m, at)
-      const { tracker: next, finished } = trackMove(t, m, at)
+      const { tracker: next, finished } = trackMove(t, m, at, method)
       setTracker(next)
       // the scramble is done: inspection starts now
       if (t.phase !== 'armed' && next.phase === 'armed' && inspectRef.current && inspRef.current == null) {
@@ -92,7 +94,7 @@ export function LabView({ data, settings, scramble, scrambleError, onNewScramble
         setRotations([])
       }
       if (next.phase === 'solving') {
-        const p = cfopProgress(next.cube)
+        const p = method === 'roux' ? rouxProgress(next.cube) : cfopProgress(next.cube)
         setReached((r) => (p > r.length ? [...r, ...Array(p - r.length).fill(Math.max(0, at - next.start))] : r))
       }
       if (finished) {
@@ -110,7 +112,7 @@ export function LabView({ data, settings, scramble, scrambleError, onNewScramble
         })
       }
     },
-    [save, setTracker],
+    [save, setTracker, method],
   )
 
   useEffect(() => onCubeMove(onMove), [onMove])
@@ -173,6 +175,7 @@ export function LabView({ data, settings, scramble, scrambleError, onNewScramble
   const hint = tracker ? scrambleHint(tracker) : null
   const lastSplits = !solving && last?.splits?.length === 4 ? last.splits : null
   const phaseEnds = solving ? reached : lastSplits ?? []
+  const shownMethod = lastSplits ? last.method ?? 'cfop' : method
   const lastMoveCounts = !solving && last?.moves && lastSplits ? movesPerPhase(last.moves.map((m) => m.t), lastSplits) : null
   const lastRotationCounts = !solving && last?.rotations && lastSplits ? rotationsPerPhase(last.rotations, lastSplits) : null
   const shownRotations = solving ? rotations.length : last?.rotations?.length
@@ -229,7 +232,7 @@ export function LabView({ data, settings, scramble, scrambleError, onNewScramble
         </div>
 
         <div className="phases">
-          {CFOP_PHASES.map((name, i) => {
+          {METHOD_PHASES[shownMethod].map((name, i) => {
             const end = phaseEnds[i]
             const start = i === 0 ? 0 : phaseEnds[i - 1]
             const done = end != null

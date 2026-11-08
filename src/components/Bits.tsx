@@ -1,6 +1,6 @@
 import { animate, motion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
-import { phaseDurations, phaseNames } from '../lib/cfop'
+import { phaseDurations, phaseNames, type Method } from '../lib/cfop'
 import { DNF, formatMs } from '../lib/time'
 
 /** A time that rolls to its new value instead of jumping. DNF and empty values switch instantly. */
@@ -26,10 +26,10 @@ const GENERIC = ['var(--fg)', 'var(--acc)', 'var(--dim)', 'var(--faint)']
 
 
 /** Solve split into phases; segments grow in one after another. */
-export function PhaseBar({ splits, animateIn = true }: { splits: readonly number[]; animateIn?: boolean }) {
+export function PhaseBar({ splits, method, animateIn = true }: { splits: readonly number[]; method?: Method; animateIn?: boolean }) {
   const d = phaseDurations(splits)
   const total = splits[splits.length - 1] || 1
-  const names = phaseNames(d.length)
+  const names = phaseNames(d.length, method)
   const colors = d.length === 4 ? CFOP_COLORS : GENERIC
   return (
     <div>

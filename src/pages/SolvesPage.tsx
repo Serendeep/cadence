@@ -32,7 +32,7 @@ function dayLabel(t: number, now = Date.now()): string {
 }
 
 const splitsTitle = (s: Solve) =>
-  s.splits && s.splits.length > 1 ? phaseDurations(s.splits).map((d, i) => `${phaseNames(s.splits!.length)[i]} ${formatMs(d)}`).join(' · ') : undefined
+  s.splits && s.splits.length > 1 ? phaseDurations(s.splits).map((d, i) => `${phaseNames(s.splits!.length, s.method)[i]} ${formatMs(d)}`).join(' · ') : undefined
 
 export function SolvesPage() {
   const { sessions, session, solves, values, stats } = useSessionData()
@@ -316,7 +316,7 @@ function SolveDrawer({ solve, index, onClose, decimals, onNewer, onOlder }: Draw
 
         {solve.splits && solve.splits.length > 1 && (
           <div style={{ marginTop: 26 }}>
-            <PhaseBar splits={solve.splits} />
+            <PhaseBar splits={solve.splits} method={solve.method} />
           </div>
         )}
 

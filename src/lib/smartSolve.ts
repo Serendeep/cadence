@@ -1,4 +1,4 @@
-import { detectCfop } from './cfop'
+import { detectSplits, type Method } from './cfop'
 import { applyAlg, applyMove, invertAlg, isFaceMove, isSolved, solvedCube, splitAlg, stateKey, type CubeState } from './cube'
 import type { TimedMove } from './types'
 
@@ -81,7 +81,7 @@ export function scrambleHint(t: Tracker): ScrambleHint {
   return { undo: dev.length ? invertAlg(dev.join(' ')) : '', remaining: t.scramble.slice(t.progress), done: t.progress, half: false }
 }
 
-export function trackMove(t: Tracker, move: string, at: number): { tracker: Tracker; finished?: SmartFinish } {
+export function trackMove(t: Tracker, move: string, at: number, method: Method = 'cfop'): { tracker: Tracker; finished?: SmartFinish } {
   if (!isFaceMove(move)) return { tracker: t }
   const cube = applyMove(t.cube, move)
   if (t.phase === 'scrambling') {
@@ -94,11 +94,11 @@ export function trackMove(t: Tracker, move: string, at: number): { tracker: Trac
   }
   const moves = [...t.moves, { m: move, t: Math.max(0, Math.round(at - t.start)) }]
   if (!isSolved(cube)) return { tracker: { ...t, cube, moves } }
-  const cfop = detectCfop(t.startCube, moves)
+  const splits = detectSplits(method, t.startCube, moves)
   const time = moves[moves.length - 1].t
   return {
     tracker: { ...t, cube, moves },
-    finished: { time, moves, splits: cfop?.splits.map((v) => Math.min(v, time)) },
+    finished: { time, moves, splits: splits?.map((v) => Math.min(v, time)) },
   }
 }
 

@@ -70,6 +70,7 @@ export function TimerPage({ onFocusChange }: { onFocusChange: (f: boolean) => vo
   }
 
   const sessionId = data.session?.id
+  const { method } = settings
   const save = useCallback(
     (r: SaveInput) => {
       const scr = scrambleRef.current
@@ -82,13 +83,14 @@ export function TimerPage({ onFocusChange }: { onFocusChange: (f: boolean) => vo
         event: scr.event,
         date: Date.now(),
         splits: r.splits && r.splits.length > 1 ? r.splits.map(Math.round) : undefined,
+        method: r.splits?.length === 4 ? method : undefined,
         moves: r.moves,
         rotations: r.rotations?.length ? r.rotations : undefined,
         source: r.source,
       })
       load()
     },
-    [sessionId, load],
+    [sessionId, load, method],
   )
 
   const lab = devices.cube != null && eventById(event).is3x3

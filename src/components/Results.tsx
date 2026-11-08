@@ -42,7 +42,7 @@ export function Results({ solves, stats, decimals, compact }: ResultsProps) {
       <AnimatePresence mode="wait">
         {last?.splits && last.splits.length > 1 && (
           <motion.div key={`ph${last.id}`} className="phasewrap" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.35 }}>
-            <PhaseBar splits={last.splits} />
+            <PhaseBar splits={last.splits} method={last.method} />
           </motion.div>
         )}
       </AnimatePresence>
