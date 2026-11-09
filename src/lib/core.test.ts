@@ -155,3 +155,24 @@ test('reads typed times the way csTimer does', () => {
   expect(parseTyped('12.3.4')).toBeNull()
   expect(parseTyped('')).toBeNull()
 })
+
+describe('insight stats', () => {
+  it('finds each best and the solve that set it', async () => {
+    const { averageRecords } = await import('./stats')
+    const v = [20000, 15000, 18000, 16000, 17000, 19000]
+    const rows = averageRecords(v)
+    expect(rows[0]).toMatchObject({ label: 'single', current: 19000, best: 15000, bestAt: 1 })
+    expect(rows.find((r) => r.label === 'mo3')).toMatchObject({ best: 16333.333333333334, bestAt: 3 })
+    expect(rows.find((r) => r.label === 'ao5')).toMatchObject({ best: 17000, bestAt: 4 })
+  })
+
+  it('takes the median of finished solves and counts sub-X', async () => {
+    const { median, subX } = await import('./stats')
+    expect(median([3, 1, DNF, 2])).toBe(2)
+    const v = [14300, 15200, 15800, 16100, 16900, 17500, 18200, 19900, 21000, 22800]
+    const s = subX(v)
+    expect(s[0]).toEqual({ under: 16000, count: 3 })
+    expect(subX([14300, 15200, 15800, 16100, 16400, 16900, 17200])[0]).toEqual({ under: 15000, count: 1 })
+    expect(s).toHaveLength(6)
+  })
+})

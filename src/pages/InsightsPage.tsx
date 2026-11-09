@@ -7,7 +7,7 @@ import { useEventSolves, useSessionData } from '../hooks/useSessionData'
 import { eventById } from '../lib/events'
 import { byDay, commonPhaseCount, pbHistory, phaseAverages, practiceGrid } from '../lib/insights'
 import { useSettings } from '../lib/settings'
-import { histogram, mean, rollingAverage, sessionStats } from '../lib/stats'
+import { averageRecords, histogram, mean, median, rollingAverage, sessionStats, subX } from '../lib/stats'
 import { DNF, formatMs, solveValue } from '../lib/time'
 import type { Solve } from '../lib/types'
 
@@ -83,8 +83,8 @@ export function InsightsPage() {
   function insightsBody() {
     return (
       <>
-      <Headline values={values} stats={stats} days={days.length} decimals={dec} />
-      {settings.coach && eventSolves && <CoachSection event={event} solves={eventSolves} />}
+      <Headline values={values} stats={stats} decimals={dec} />
+      <StatsTables solves={solves} values={values} stats={stats} days={days.length} decimals={dec} />
 
       <section className="section">
         <div className="chart-head">
@@ -179,16 +179,16 @@ export function InsightsPage() {
           )}
         </section>
       </div>
+      {settings.coach && eventSolves && <CoachSection event={event} solves={eventSolves} />}
       </>
     )
   }
 }
 
 /** The one number that says where you are now, its trend, and the rest of the records in a quiet line. */
-function Headline({ values, stats, days, decimals }: { values: number[]; stats: ReturnType<typeof sessionStats>; days: number; decimals: 2 | 3 }) {
+function Headline({ values, stats, decimals }: { values: number[]; stats: ReturnType<typeof sessionStats>; decimals: 2 | 3 }) {
   const lead = stats.current[12] != null ? { label: 'current ao12', v: stats.current[12] } : stats.current[5] != null ? { label: 'current ao5', v: stats.current[5] } : { label: 'best single', v: stats.best }
   const t = trend(values)
-  const records: [string, number | null][] = [['best', stats.best], ['best ao5', stats.bestAvg[5]], ['best ao12', stats.bestAvg[12]], ['best ao100', stats.bestAvg[100]], ['mean', stats.mean], ['σ', stats.sd]]
   return (
     <section className="headline">
       <div className="lead">
@@ -204,11 +204,71 @@ function Headline({ values, stats, days, decimals }: { values: number[]; stats: 
           )}
         </p>
       </div>
-      <p className="records">
-        <span><b className="num">{stats.count.toLocaleString()}</b> solves over {days} {days === 1 ? 'day' : 'days'}</span>
-        {records.filter(([, v]) => v != null).map(([k, v]) => <span key={k}>{k} <b className="num">{formatMs(v, decimals)}</b></span>)}
-        {stats.dnf > 0 && <span>DNF <b className="num">{stats.dnf}</b></span>}
-      </p>
     </section>
+  )
+}
+
+const shortDate = (t: number) => new Date(t).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
+
+/** The numbers a cuber checks: every average with its best and when it was set, the session totals, and sub-X counts. */
+function StatsTables({ solves, values, stats, days, decimals }: { solves: Solve[]; values: number[]; stats: ReturnType<typeof sessionStats>; days: number; decimals: 2 | 3 }) {
+  const records = useMemo(() => averageRecords(values), [values])
+  const mid = useMemo(() => median(values), [values])
+  const sub = useMemo(() => subX(values), [values])
+  const plus2 = useMemo(() => solves.filter((s) => s.penalty === '+2').length, [solves])
+  const finished = stats.count - stats.dnf
+  const session: [string, string][] = [
+    ['solves', `${stats.count.toLocaleString()} over ${days} ${days === 1 ? 'day' : 'days'}`],
+    ['mean', formatMs(stats.mean, decimals)],
+    ['median', formatMs(mid, decimals)],
+    ['σ', stats.sd != null && stats.mean ? `${formatMs(stats.sd, decimals)} · ${((stats.sd / stats.mean) * 100).toFixed(1)}%` : '—'],
+    ['worst', formatMs(stats.worst, decimals)],
+    ['+2 / DNF', `${plus2} / ${stats.dnf}`],
+  ]
+  return (
+    <>
+      <div className="stats-grid section">
+        <section>
+          <h2>Averages</h2>
+          <table className="stats-table num">
+            <thead><tr><th /><th>current</th><th>best</th><th>set</th></tr></thead>
+            <tbody>
+              {records.map((r) => (
+                <tr key={r.label}>
+                  <th>{r.label}</th>
+                  <td>{formatMs(r.current, decimals)}</td>
+                  {/* red only when the current value is the best one */}
+                  <td className={r.current != null && r.current === r.best ? 'pb' : ''}>{formatMs(r.best, decimals)}</td>
+                  <td className="when">{r.bestAt != null && solves[r.bestAt] ? shortDate(solves[r.bestAt].date) : ''}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+        <section>
+          <h2>Session</h2>
+          <table className="stats-table kv num">
+            <tbody>
+              {session.map(([k, v]) => <tr key={k}><th>{k}</th><td>{v}</td></tr>)}
+            </tbody>
+          </table>
+        </section>
+      </div>
+      {sub.length > 0 && (
+        <section className="section">
+          <h2>Sub-X</h2>
+          <div className="subx">
+            {sub.map((x) => (
+              <div key={x.under}>
+                <span className="dim">sub-{formatMs(x.under).replace(/\.00$/, '')}</span>
+                <b className="num">{x.count.toLocaleString()}</b>
+                <i><b style={{ width: `${finished ? (x.count / finished) * 100 : 0}%` }} /></i>
+                <small>{finished ? Math.round((x.count / finished) * 100) : 0}%</small>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+    </>
   )
 }

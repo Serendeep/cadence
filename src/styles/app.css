@@ -478,5 +478,21 @@ body:has(.toast) .coach-card { bottom: 96px; }
 .headline .lead p b { color: var(--fg); font-weight: 600; }
 .headline .good { color: var(--good); }
 .headline .bad { color: var(--bad); }
-.headline .records { display: flex; flex-wrap: wrap; gap: 4px 20px; margin: 16px 0 0; color: var(--dim); font-size: 14px; }
-.headline .records b { color: var(--fg); font-weight: 500; }
+.stats-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 20px 48px; }
+@media (max-width: 720px) { .stats-grid { grid-template-columns: 1fr; } }
+.stats-grid h2 { margin-bottom: 8px; }
+.section > h2 + .subx { margin-top: 10px; }
+.stats-table { width: 100%; border-collapse: collapse; font-size: 15px; }
+.stats-table thead th { color: var(--faint); font-size: 12px; font-weight: 400; text-align: right; padding-bottom: 6px; }
+.stats-table tbody th { text-align: left; color: var(--dim); font-weight: 400; }
+.stats-table td, .stats-table tbody th { padding: 7px 0; border-top: 1px solid var(--line); }
+.stats-table td { text-align: right; }
+.stats-table td.when { color: var(--faint); font-size: 13px; width: 5.5em; }
+.stats-table td.pb { color: var(--acc); font-weight: 600; }
+.subx { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 720px) { .subx { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.subx > div > span { display: block; font-size: 13px; }
+.subx > div > b { display: block; font-size: 22px; font-weight: 500; }
+.subx i { display: block; height: 5px; border-radius: 3px; background: var(--surface); margin: 6px 0 4px; overflow: hidden; }
+.subx i b { display: block; height: 100%; background: var(--fg); }
+.subx small { color: var(--faint); font-size: 12px; }
