@@ -53,25 +53,30 @@ export function Results({ solves, stats, decimals, compact }: ResultsProps) {
         <div className="stat quiet">mean<b><AnimatedTime value={stats.mean} decimals={decimals} /></b></div>
         <div className="stat quiet count">solves<b className="num">{stats.count}</b></div>
       </div>
-      {last && !compact && (
-        <motion.div className="lastsolve" key={`ls${last.id}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15 }}>
-          <Delta last={last} stats={stats} />
-          {PENALTIES.map((p) => (
-            <button
-              key={p.value}
-              type="button"
-              className="btn"
-              aria-pressed={last.penalty === p.value}
-              onClick={() => last.id != null && updateSolve(last.id, { penalty: p.value })}
-            >
-              {p.label}
-            </button>
-          ))}
-          <button type="button" className="btn ghost iconbtn" aria-label="Delete last solve" onClick={() => removeSolveWithUndo(last)}>
-            <TrashIcon />
-          </button>
-        </motion.div>
-      )}
+      {last && !compact && <LastSolveControls last={last} stats={stats} />}
     </div>
+  )
+}
+
+/** OK / +2 / DNF and delete for the last solve. */
+export function LastSolveControls({ last, stats }: { last: Solve; stats: SessionStats }) {
+  return (
+    <motion.div className="lastsolve" key={`ls${last.id}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15 }}>
+      <Delta last={last} stats={stats} />
+      {PENALTIES.map((p) => (
+        <button
+          key={p.value}
+          type="button"
+          className="btn"
+          aria-pressed={last.penalty === p.value}
+          onClick={() => last.id != null && updateSolve(last.id, { penalty: p.value })}
+        >
+          {p.label}
+        </button>
+      ))}
+      <button type="button" className="btn ghost iconbtn" aria-label="Delete last solve" onClick={() => removeSolveWithUndo(last)}>
+        <TrashIcon />
+      </button>
+    </motion.div>
   )
 }
