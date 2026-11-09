@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react'
-import { db, onDbChange, withoutChangeEvents } from './db'
+import { db, onDbChange, removeEmptyMainsOnce, withoutChangeEvents } from './db'
 import { finite, isObj, solveFields } from './importExport'
 import { getSettings, setSettings, subscribeSettings, type Settings } from './settings'
 import { toast } from './toast'
@@ -271,6 +271,8 @@ export async function syncNow(): Promise<void> {
         again = false
         await pushAndPull()
       } while (again)
+      // only now has every synced session's solves arrived, so an empty one here is empty everywhere
+      await removeEmptyMainsOnce(getSettings().sessionId)
       update({ status: 'idle' })
     } catch (e) {
       if (e instanceof SignedOut) {

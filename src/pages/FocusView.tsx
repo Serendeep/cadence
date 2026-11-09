@@ -26,7 +26,6 @@ export function FocusView({ data, settings, drill, scramble, scrambleError, onNe
     {
       inspection: settings.inspection && !isBlind(data.session?.event ?? '333'),
       holdMs: settings.holdMs,
-      phases: external ? 1 : settings.phases,
       voice: settings.inspectionVoice,
       source: external ? 'external' : 'manual',
       enabled: !typing,
@@ -56,11 +55,11 @@ export function FocusView({ data, settings, drill, scramble, scrambleError, onNe
   const tone = signal ?? (state.phase === 'holding' ? 'hold' : state.phase === 'ready' ? 'ready' : state.phase === 'inspecting' && now > 12000 ? 'insp-warn' : '')
   const hint = (() => {
     if (typing) return ''
-    if (state.phase === 'running' && settings.phases > 1 && !external) return `phase ${state.splits.length + 1} of ${settings.phases}`
     if (state.phase === 'inspecting') return external ? 'Start the timer when ready' : 'Hold space to get ready'
     if (state.phase !== 'idle') return ''
     if (external) return 'Timer connected. Put both hands on the pads.'
     if (settings.input === 'stackmat' || settings.input === 'gantimer') return 'Timer not connected. Choose the input again to reconnect.'
+    if (settings.input === 'smartcube') return 'Cube not connected. Choose the input again to connect.'
     return data.solves.length ? '' : 'Hold space, or touch and hold, then release to start'
   })()
 

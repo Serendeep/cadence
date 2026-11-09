@@ -30,7 +30,7 @@ Turn on Inspection in Settings, or tap "inspection off" above the scramble. Pres
 
 ### Phases
 
-Settings > Timing > Phases splits a solve into up to eight parts. With four phases they are named after the method set in Settings > Timing > Method: Cross, F2L, OLL and PLL for CFOP, or First block, Second block, CMLL and LSE for Roux. Tap space at the end of each one and the last tap stops the timer. A bar under the time shows how long each phase took. Smart cubes detect the phases of either method on their own, so you don't need to tap.
+A connected smart cube splits each solve into four phases on its own, named after the method in Settings > Timing > Method: Cross, F2L, OLL and PLL for CFOP, or First block, Second block, CMLL and LSE for Roux. A bar under the time shows how long each phase took. Timing with the keyboard, touch or an external timer gives no splits: a press always stops the timer.
 
 ### Other timing settings
 
@@ -66,7 +66,7 @@ Coach is off until you turn it on in Settings > Coach. It reads every solve of t
 
 It looks for four things, each only once there is enough data to trust:
 
-- **A slow phase.** With 60 or more solves that carry splits from your current method (four phases, or a smart cube), it compares your last 20 with the best stretch of 20 you have done. A phase more than 0.3 s slower than in that stretch is a finding. CFOP and Roux splits are never compared with each other, and switching method ends a phase you were working on.
+- **A slow phase.** With 60 or more solves that carry smart cube splits from your current method, it compares your last 20 with the best stretch of 20 you have done. A phase more than 0.3 s slower than in that stretch is a finding. CFOP and Roux splits are never compared with each other, and switching method ends a phase you were working on.
 - **Slow solves.** Over your last 50 solves (25 at least), it adds up how much the solves more than 20% above your median raise your mean.
 - **Warm-up.** Across sittings of 10 solves or more, it checks whether your first 3 solves are slower than the rest. A sitting ends at a break of 10 minutes.
 - **Fatigue.** Across sittings of 30 solves or more, it checks whether your last 10 are slower than the middle.
@@ -103,7 +103,7 @@ Once signed in, Cadence syncs a couple of seconds after each change, when the ap
 What syncs:
 
 - sessions, solves, penalties and comments, and smart cube moves and rotations
-- settings such as theme, inspection and phases
+- settings such as theme, inspection and method
 
 Some settings describe the device rather than you, so they stay on each device: the input (keyboard, Stackmat, smart cube), the session currently open, and Share diagnostics.
 

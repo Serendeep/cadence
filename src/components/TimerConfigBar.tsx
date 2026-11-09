@@ -10,7 +10,7 @@ import { Menu } from './Menu'
 
 const INPUT_LABEL: Record<InputMethod, string> = { keyboard: 'keyboard', typing: 'typing', stackmat: 'stackmat', gantimer: 'gan timer', smartcube: 'smart cube' }
 
-/** Event, session, inspection, input and phases as a row of quiet text menus. */
+/** Event, session, inspection and input as a row of quiet text menus. */
 export function TimerConfigBar({ data, settings }: { data: SessionData; settings: Settings }) {
   const devices = useDevices()
   const counts = useSessionCounts()
@@ -107,16 +107,6 @@ export function TimerConfigBar({ data, settings }: { data: SessionData; settings
               ]
             : []),
         ]}
-      />
-      <Menu
-        label="Phases"
-        trigger={<>phases <b>{settings.phases === 1 ? 'off' : settings.phases === 4 ? 'cfop' : settings.phases}</b></>}
-        items={[1, 2, 3, 4].map((n) => ({
-          key: String(n),
-          label: n === 1 ? 'Off' : n === 4 ? '4 (cross, F2L, OLL, PLL)' : `${n} phases`,
-          checked: settings.phases === n,
-          onSelect: () => setSettings({ phases: n }),
-        }))}
       />
     </div>
   )

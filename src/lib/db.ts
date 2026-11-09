@@ -86,10 +86,39 @@ class TimerDB extends Dexie {
 
 export const db = new TimerDB()
 
+// one uid on every device, so sync sees each first-launch "Main" as the same session instead of piling up copies
+const DEFAULT_SESSION_UID = 'default-main-333'
+const CLEANED_KEY = 'cadence:empty-mains-cleaned'
+
 export async function ensureSession(): Promise<number> {
   const first = await db.sessions.orderBy('order').first()
   if (first?.id != null) return first.id
-  return db.sessions.add({ name: 'Main', event: '333', created: Date.now(), order: 0 })
+  return db.sessions.add({ uid: DEFAULT_SESSION_UID, name: 'Main', event: '333', created: Date.now(), order: 0 })
+}
+
+/** Deletes the extra empty "Main" sessions earlier versions created on each device; never one with solves or `keepId`. */
+export async function removeEmptyMains(keepId: number | null): Promise<number> {
+  const sessions = await db.sessions.toArray()
+  const empty: number[] = []
+  for (const s of sessions) {
+    if (s.id == null || s.id === keepId || s.name !== 'Main' || s.event !== '333') continue
+    if ((await db.solves.where('sessionId').equals(s.id).count()) === 0) empty.push(s.id)
+  }
+  // never leave the device with no session at all
+  const doomed = empty.length === sessions.length ? empty.slice(1) : empty
+  for (const id of doomed) await deleteSession(id)
+  return doomed.length
+}
+
+/** Runs removeEmptyMains once per device; callers make sure everything synced has arrived first, so no solves are orphaned. */
+export async function removeEmptyMainsOnce(keepId: number | null): Promise<void> {
+  try {
+    if (localStorage.getItem(CLEANED_KEY)) return
+    await removeEmptyMains(keepId)
+    localStorage.setItem(CLEANED_KEY, '1')
+  } catch {
+    // storage blocked: try again next launch, which is harmless
+  }
 }
 
 export async function createSession(name: string, event: string): Promise<number> {

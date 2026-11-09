@@ -9,7 +9,6 @@ import { connectCube, connectExternal, disconnectCube, disconnectExternal, useDe
 import { bluetoothAvailable } from '../lib/devices'
 import { makeBackup, parseImport, toCstimer, withoutDuplicates } from '../lib/importExport'
 import { setSettings, useSettings, type CoachFocus, type ThemeName } from '../lib/settings'
-import { phaseNames } from '../lib/cfop'
 import { toast } from '../lib/toast'
 import { installApp, useCanInstall } from '../lib/pwa'
 import { hasAutoBackups, openBackups } from '../lib/backups'
@@ -53,7 +52,7 @@ function ScrollHere({ when }: { when: boolean }) {
 const SECTIONS = [
   { id: 'account', label: 'Account', hint: 'Sign in and sync' },
   { id: 'appearance', label: 'Appearance', hint: 'Theme' },
-  { id: 'timing', label: 'Timing', hint: 'Inspection, hold, phases' },
+  { id: 'timing', label: 'Timing', hint: 'Inspection, hold, method' },
   { id: 'coach', label: 'Coach', hint: 'Findings and drills' },
   { id: 'devices', label: 'Devices', hint: 'Timers and smart cubes' },
   { id: 'data', label: 'Your data', hint: 'Import, export, delete' },
@@ -265,16 +264,6 @@ export function SettingsPage() {
                 if (v !== s.method) setSettings({ method: v, coachFocus: keepFocus(s.coachFocus) })
               }}
               options={[{ value: 'cfop', label: 'CFOP' }, { value: 'roux', label: 'Roux' }]}
-            />
-          </SettingsRow>
-
-          <SettingsRow title="Phases" desc={`Tap space to end each phase. Four phases are ${phaseNames(4, s.method).join(', ')}.`}>
-            <Segmented
-              id="phases"
-              label="Phases"
-              value={s.phases}
-              onChange={(v) => setSettings({ phases: v })}
-              options={[1, 2, 3, 4].map((v) => ({ value: v, label: v === 1 ? 'off' : String(v) }))}
             />
           </SettingsRow>
 

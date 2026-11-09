@@ -96,7 +96,7 @@ describe('CFOP detection', () => {
 describe('timer machine', () => {
   const run = (cfg: TimerConfig, evs: TimerEvent[]) =>
     evs.reduce<TimerState>((s, e) => timerReducer(s, e, cfg), initialTimer)
-  const cfg: TimerConfig = { inspection: false, holdMs: 300, phases: 1 }
+  const cfg: TimerConfig = { inspection: false, holdMs: 300 }
 
   it('releasing before the hold time does not start', () => {
     expect(run(cfg, [{ type: 'press', at: 0 }, { type: 'tick', at: 100 }, { type: 'release', at: 150 }]).phase).toBe('idle')
@@ -106,13 +106,6 @@ describe('timer machine', () => {
       { type: 'press', at: 0 }, { type: 'tick', at: 300 }, { type: 'release', at: 400 }, { type: 'press', at: 12400 },
     ])
     expect(s).toEqual({ phase: 'stopped', result: { time: 12000, penalty: 'ok', splits: [12000] } })
-  })
-  it('multi-phase presses record splits', () => {
-    const s = run({ ...cfg, holdMs: 0, phases: 3 }, [
-      { type: 'press', at: 0 }, { type: 'release', at: 0 },
-      { type: 'press', at: 2000 }, { type: 'press', at: 7000 }, { type: 'press', at: 10000 },
-    ])
-    expect(s.phase === 'stopped' && s.result.splits).toEqual([2000, 7000, 10000])
   })
   it('starting 16s into inspection is +2, 18s is DNF', () => {
     const c = { ...cfg, inspection: true, holdMs: 0 }

@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'motion/react'
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 
 export interface MenuItem {
   key: string
@@ -19,9 +19,23 @@ interface MenuProps {
 }
 
 /** A text trigger that opens a small popover list. Closes on outside click, Escape and selection. */
+const EDGE_PX = 8
+
 export function Menu({ trigger, label, items, className }: MenuProps) {
   const [open, setOpen] = useState(false)
   const wrap = useRef<HTMLDivElement>(null)
+
+  // a menu centred under a button near the screen edge slides back on screen
+  useLayoutEffect(() => {
+    const menu = wrap.current?.querySelector<HTMLElement>('.menu')
+    const box = wrap.current?.getBoundingClientRect()
+    if (!open || !menu || !box) return
+    const half = menu.offsetWidth / 2
+    const left = box.left + box.width / 2 - half
+    const right = left + 2 * half
+    const shift = left < EDGE_PX ? EDGE_PX - left : right > window.innerWidth - EDGE_PX ? window.innerWidth - EDGE_PX - right : 0
+    menu.style.marginLeft = `${shift}px`
+  }, [open])
 
   useEffect(() => {
     if (!open) return

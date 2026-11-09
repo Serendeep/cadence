@@ -147,7 +147,7 @@ export function InsightsPage() {
           </>
         ) : (
           <div className="empty" style={{ marginTop: 12 }}>
-            No splits yet. Turn on phases in the timer bar, or connect a smart cube.
+            No splits yet. Connect a smart cube and it splits each solve into phases.
           </div>
         )}
       </section>
