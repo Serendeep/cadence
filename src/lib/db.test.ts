@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto'
 import { liveQuery } from 'dexie'
 import { expect, test, vi } from 'vitest'
-import { addSolve, createSession, db, deleteSolve, ensureSession, mergeSession, onSolveDeleted, sessionSolves, updateSolve } from './db'
+import { addSolve, createSession, db, deleteSolve, ensureSession, mergeSession, onSolveDeleted, removeEmptyMains, sessionSolves, updateSolve } from './db'
 import type { Solve } from './types'
 
 test('deletion notifies views after committing and supports undo and edits', async () => {
@@ -70,4 +70,24 @@ test('merging moves every solve with its uid into the target and removes the sou
   } finally {
     await db.delete()
   }
+})
+
+test('empty Main cleanup removes extra empty Mains but keeps one with solves, the open one and other names', async () => {
+  await db.open()
+  await db.sessions.clear()
+  await db.solves.clear()
+  const a = await createSession('Main', '333')
+  const b = await createSession('Main', '333')
+  const c = await createSession('Main', '333')
+  const withSolves = await createSession('Main', '333')
+  const other = await createSession('cstimer 1', '333')
+  await addSolve({ sessionId: withSolves, time: 12000, penalty: 'ok', scramble: 'R', event: '333', date: 1 })
+  expect(await removeEmptyMains(a)).toBe(2)
+  const left = (await db.sessions.toArray()).map((s) => s.id)
+  expect(left.sort()).toEqual([a, withSolves, other].sort())
+  expect(left).not.toContain(b)
+  expect(left).not.toContain(c)
+  // deletions sync to other devices
+  expect((await db.tombstones.toArray()).filter((t) => t.kind === 'session')).toHaveLength(2)
+  await db.delete()
 })

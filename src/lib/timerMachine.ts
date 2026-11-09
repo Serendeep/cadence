@@ -7,8 +7,6 @@ export interface TimerConfig {
   inspection: boolean
   /** How long the start key must be held before the timer arms; 0 arms instantly */
   holdMs: number
-  /** Number of phases; values > 1 make extra presses record splits instead of stopping */
-  phases: number
 }
 
 export interface TimerResult {
@@ -71,7 +69,6 @@ export function timerReducer(state: TimerState, ev: TimerEvent, cfg: TimerConfig
     case 'running': {
       if (ev.type !== 'press') return state
       const elapsed = ev.at - state.start
-      if (state.splits.length < cfg.phases - 1) return { ...state, splits: [...state.splits, elapsed] }
       return { phase: 'stopped', result: { time: elapsed, penalty: state.penalty, splits: [...state.splits, elapsed] } }
     }
     case 'stopped':

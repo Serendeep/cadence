@@ -33,7 +33,6 @@ export interface Settings {
   inspection: boolean
   inspectionVoice: Voice
   holdMs: number
-  phases: number
   /** Names the four phases and picks how a smart cube splits them */
   method: Method
   timerUpdate: TimerUpdate
@@ -57,7 +56,6 @@ const DEFAULTS: Settings = {
   inspection: false,
   inspectionVoice: 'male',
   holdMs: 300,
-  phases: 1,
   method: 'cfop',
   timerUpdate: 'live',
   input: 'keyboard',
@@ -106,7 +104,6 @@ function sanitize(raw: unknown): Settings {
   // older versions stored an on/off switch
   if (src.inspectionVoice === false) out.inspectionVoice = 'off'
   if (!VOICES.includes(out.inspectionVoice as Voice)) out.inspectionVoice = DEFAULTS.inspectionVoice
-  out.phases = Math.min(8, Math.max(1, Math.round(out.phases as number)))
   out.holdMs = Math.min(2000, Math.max(0, out.holdMs as number))
   return out as unknown as Settings
 }
