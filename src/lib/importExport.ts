@@ -131,7 +131,7 @@ function parseBackup(json: unknown): ImportedData {
   for (const s of json.sessions) {
     if (!isObj(s) || !finite(s.id) || typeof s.name !== 'string') continue
     index.set(s.id, out.sessions.length)
-    out.sessions.push({ name: s.name, event: typeof s.event === 'string' ? s.event : '333', created: finite(s.created) ? s.created : Date.now(), order: out.sessions.length })
+    out.sessions.push({ name: s.name, event: typeof s.event === 'string' ? s.event : '333', created: finite(s.created) ? s.created : Date.now(), order: out.sessions.length, archived: s.archived === true })
   }
   for (const v of json.solves) {
     const si = isObj(v) && finite(v.sessionId) ? index.get(v.sessionId) : undefined

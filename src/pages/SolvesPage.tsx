@@ -4,13 +4,14 @@ import { AnimatePresence, motion } from 'motion/react'
 import { useCallback, useMemo, useState } from 'react'
 import { phaseNames } from '../lib/cfop'
 import { Menu } from '../components/Menu'
-import { useSessionData } from '../hooks/useSessionData'
+import { useSessionCounts, useSessionData } from '../hooks/useSessionData'
 import { phaseDurations } from '../lib/cfop'
-import { createSession, deleteSession, updateSession } from '../lib/db'
+import { createSession, deleteSession, mergeSession, updateSession } from '../lib/db'
 import { eventById } from '../lib/events'
 import { setSettings, useSettings } from '../lib/settings'
 import { rollingAverage } from '../lib/stats'
 import { formatMs, formatSolve } from '../lib/time'
+import { toast } from '../lib/toast'
 import type { Solve } from '../lib/types'
 
 const PAGE = 100
@@ -38,6 +39,8 @@ export function SolvesPage() {
   const [openId, setOpenId] = useState<number | null>(null)
   const [renaming, setRenaming] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [mergeTarget, setMergeTarget] = useState<number | null>(null)
+  const counts = useSessionCounts()
   const ao5 = useMemo(() => rollingAverage(values, 5), [values])
   const ao12 = useMemo(() => rollingAverage(values, 12), [values])
   const rows = useMemo(() => solves.map((s, i) => ({ s, i })).reverse().slice(0, shown), [solves, shown])
@@ -48,6 +51,21 @@ export function SolvesPage() {
   const dec = settings.decimals
 
   const importCs = () => (location.hash = '/settings?import')
+  const mergeCandidates = sessions.filter((s) => s.id !== session?.id && s.event === session?.event)
+  const target = sessions.find((s) => s.id === mergeTarget)
+  const moreItems = [
+    session?.archived
+      ? { key: 'unarchive', label: 'Unarchive', onSelect: () => void updateSession(session.id!, { archived: false }) }
+      : { key: 'archive', label: 'Archive', onSelect: () => session?.id != null && void updateSession(session.id, { archived: true }) },
+    ...(mergeCandidates.length ? [{ key: 'merge', label: 'Merge into…', onSelect: () => setMergeTarget(mergeCandidates[0].id!) }] : []),
+  ]
+  const merge = () => {
+    setMergeTarget(null)
+    if (session?.id == null || target?.id == null) return
+    mergeSession(session.id, target.id)
+      .then(() => setSettings({ sessionId: target.id! }))
+      .catch((e: unknown) => toast(`Could not merge: ${e instanceof Error ? e.message : 'unknown error'}`))
+  }
   const newSession = () => void createSession(`Session ${sessions.length + 1}`, session?.event ?? '333').then((id) => setSettings({ sessionId: id }))
 
   return (
@@ -76,7 +94,7 @@ export function SolvesPage() {
         <div className="actions">
           <select aria-label="Session" value={session?.id ?? ''} onChange={(e) => setSettings({ sessionId: Number(e.target.value) })}>
             {sessions.map((s) => (
-              <option key={s.id} value={s.id}>{s.name}</option>
+              <option key={s.id} value={s.id}>{s.archived ? `${s.name} (archived)` : s.name}</option>
             ))}
           </select>
           <div className="wide-only">
@@ -86,6 +104,7 @@ export function SolvesPage() {
             <button type="button" className="btn text danger" onClick={() => setConfirmDelete(true)} disabled={sessions.length <= 1}>
               Delete session
             </button>
+            <Menu label="More session actions" trigger={<span className="btn text">More</span>} items={moreItems} />
           </div>
           <Menu
             className="narrow-only"
@@ -95,6 +114,7 @@ export function SolvesPage() {
               { key: 'import', label: 'Import from csTimer', onSelect: importCs },
               { key: 'rename', label: 'Rename session', onSelect: () => setRenaming(true) },
               { key: 'new', label: 'New session', onSelect: newSession },
+              ...moreItems,
               ...(sessions.length > 1 ? ['sep' as const, { key: 'delete', label: 'Delete session', onSelect: () => setConfirmDelete(true) }] : []),
             ]}
           />
@@ -176,6 +196,25 @@ export function SolvesPage() {
             onNewer={openIndex < solves.length - 1 ? () => step(1) : undefined}
             onOlder={openIndex > 0 ? () => step(-1) : undefined}
           />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {target && session && (
+          <Dialog title="Merge sessions" onClose={() => setMergeTarget(null)}>
+            <label className="visually-hidden" htmlFor="merge-target">Merge into</label>
+            <select id="merge-target" value={target.id} onChange={(e) => setMergeTarget(Number(e.target.value))}>
+              {mergeCandidates.map((s) => (
+                <option key={s.id} value={s.id}>{s.name} · {(counts.get(s.id!) ?? 0).toLocaleString()}</option>
+              ))}
+            </select>
+            <p className="dim">
+              Move {solves.length.toLocaleString()} solves from {session.name} into {target.name}? {session.name} is then deleted.
+            </p>
+            <div className="row">
+              <button type="button" className="btn" onClick={() => setMergeTarget(null)}>Cancel</button>
+              <button type="button" className="btn primary" onClick={merge}>Merge</button>
+            </div>
+          </Dialog>
         )}
       </AnimatePresence>
       <AnimatePresence>

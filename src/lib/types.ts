@@ -51,4 +51,6 @@ export interface Session extends Synced {
   event: string
   created: number
   order: number
+  /** Hidden from the session menu unless it is the one open */
+  archived?: boolean
 }

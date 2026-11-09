@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto'
 import { liveQuery } from 'dexie'
 import { expect, test, vi } from 'vitest'
-import { addSolve, db, deleteSolve, ensureSession, onSolveDeleted, sessionSolves, updateSolve } from './db'
+import { addSolve, createSession, db, deleteSolve, ensureSession, mergeSession, onSolveDeleted, sessionSolves, updateSolve } from './db'
 import type { Solve } from './types'
 
 test('deletion notifies views after committing and supports undo and edits', async () => {
@@ -39,6 +39,35 @@ test('deletion notifies views after committing and supports undo and edits', asy
   } finally {
     subscription.unsubscribe()
     unsubscribe()
+    await db.delete()
+  }
+})
+
+test('merging moves every solve with its uid into the target and removes the source', async () => {
+  await db.open()
+  try {
+    const target = await createSession('Main', '333')
+    const source = await createSession('OH practice', '333')
+    const other = await createSession('Other', '333')
+    for (let i = 0; i < 3; i++) await db.solves.add({ sessionId: source, time: 10000 + i, penalty: 'ok', scramble: 'R', event: '333', date: i, updated: 1 })
+    await addSolve({ sessionId: target, time: 9000, penalty: 'ok', scramble: 'U', event: '333', date: 10 })
+    await addSolve({ sessionId: other, time: 8000, penalty: 'ok', scramble: 'F', event: '333', date: 11 })
+    const before = await db.solves.where('sessionId').equals(source).toArray()
+    const sourceUid = (await db.sessions.get(source))!.uid!
+    const startedAt = Date.now()
+
+    await mergeSession(source, target)
+
+    const moved = await db.solves.where('uid').anyOf(before.map((s) => s.uid!)).toArray()
+    expect(moved).toHaveLength(3)
+    expect(moved.every((s) => s.sessionId === target && s.updated! >= startedAt)).toBe(true)
+    expect(await db.solves.where('sessionId').equals(target).count()).toBe(4)
+    expect(await db.solves.where('sessionId').equals(other).count()).toBe(1)
+    expect(await db.sessions.get(source)).toBeUndefined()
+    expect(await db.tombstones.get(sourceUid)).toMatchObject({ kind: 'session' })
+    expect(await db.tombstones.where('uid').anyOf(before.map((s) => s.uid!)).count()).toBe(0)
+    await expect(mergeSession(target, target)).rejects.toThrow()
+  } finally {
     await db.delete()
   }
 })
