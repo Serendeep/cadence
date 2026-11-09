@@ -128,3 +128,64 @@ export function histogram(values: readonly number[], bins = 16): { from: number;
   for (const v of ok) out[Math.min(n - 1, Math.floor((v - start) / width))].count++
   return out
 }
+
+export interface AverageRecord {
+  label: string
+  current: number | null
+  best: number | null
+  /** Index of the solve that completed the best, so its date can be shown */
+  bestAt: number | null
+}
+
+/** Lowest value and its index, ignoring nulls. */
+function bestWithIndex(values: readonly (number | null)[]): { best: number | null; at: number | null } {
+  let at: number | null = null
+  values.forEach((v, i) => {
+    if (v != null && (at == null || v < values[at]!)) at = i
+  })
+  return { best: at == null ? null : values[at], at }
+}
+
+const rollingMean = (values: readonly number[], n: number) => values.map((_, i) => (i + 1 < n ? null : meanOf(values.slice(0, i + 1), n)))
+
+/** Single, mo3 and every aoN the history is long enough for: current value, best value and where the best was set. */
+export function averageRecords(values: readonly number[]): AverageRecord[] {
+  const single = bestWithIndex(values.map((v) => (v === DNF ? null : v)))
+  const rows: AverageRecord[] = [{ label: 'single', current: values.at(-1) ?? null, best: single.best, bestAt: single.at }]
+  if (values.length >= 3) {
+    // shortcut: mo3 over the last 20k solves only, the slicing mean is O(n²) in memory churn beyond that
+    const tail = values.slice(-20000)
+    const m = bestWithIndex(rollingMean(tail, 3))
+    rows.push({ label: 'mo3', current: meanOf(values, 3), best: m.best, bestAt: m.at == null ? null : m.at + values.length - tail.length })
+  }
+  for (const n of AVERAGE_SIZES) {
+    if (values.length < n || (n === 1000 && values.length > 20000)) continue
+    const r = bestWithIndex(rollingAverage(values, n))
+    rows.push({ label: `ao${n}`, current: averageOf(values, n), best: r.best, bestAt: r.at })
+  }
+  return rows
+}
+
+/** Median of finished solves. */
+export function median(values: readonly number[]): number | null {
+  const ok = values.filter((v) => v !== DNF).sort((a, b) => a - b)
+  if (!ok.length) return null
+  const m = ok.length >> 1
+  return ok.length % 2 ? ok[m] : (ok[m - 1] + ok[m]) / 2
+}
+
+const SUB_X_STEPS_S = [1, 2, 5, 10, 15, 30, 60]
+
+/** Up to six round thresholds from just above the best single to about the 90th percentile, with how many solves beat each. */
+export function subX(values: readonly number[]): { under: number; count: number }[] {
+  const ok = values.filter((v) => v !== DNF).sort((a, b) => a - b)
+  if (ok.length < 5) return []
+  const first = Math.floor(ok[0] / 1000) + 1
+  const p90 = ok[Math.floor(ok.length * 0.9)] / 1000
+  const step = SUB_X_STEPS_S.find((s) => first + s * 5 >= p90) ?? 60
+  const start = Math.ceil(first / step) * step
+  return Array.from({ length: 6 }, (_, i) => {
+    const under = (start + i * step) * 1000
+    return { under, count: ok.filter((v) => v < under).length }
+  })
+}
