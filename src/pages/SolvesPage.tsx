@@ -81,9 +81,9 @@ export function SolvesPage() {
           </select>
           <div className="wide-only">
             <button type="button" className="btn" onClick={importCs}>Import from csTimer</button>
-            <button type="button" className="btn" onClick={() => setRenaming(true)}>Rename</button>
-            <button type="button" className="btn" onClick={newSession}>New session</button>
-            <button type="button" className="btn danger" onClick={() => setConfirmDelete(true)} disabled={sessions.length <= 1}>
+            <button type="button" className="btn text" onClick={() => setRenaming(true)}>Rename</button>
+            <button type="button" className="btn text" onClick={newSession}>New session</button>
+            <button type="button" className="btn text danger" onClick={() => setConfirmDelete(true)} disabled={sessions.length <= 1}>
               Delete session
             </button>
           </div>

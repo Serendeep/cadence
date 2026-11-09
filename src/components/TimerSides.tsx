@@ -33,12 +33,15 @@ export function TimerSides({ solves, values, stats, decimals }: SidesProps) {
               <tr key={n}>
                 <th>ao{n}</th>
                 <td>{formatMs(stats.current[n], decimals)}</td>
-                <td className="acc">{formatMs(stats.bestAvg[n], decimals)}</td>
+                {/* red only when the current average is the best one */}
+                <td className={stats.current[n] != null && stats.current[n] === stats.bestAvg[n] ? 'acc' : 'faded'}>{formatMs(stats.bestAvg[n], decimals)}</td>
               </tr>
             ))}
+            <tr><th>single</th><td /><td className={values[values.length - 1] === stats.best ? 'acc' : 'faded'}>{formatMs(stats.best, decimals)}</td></tr>
           </tbody>
         </table>
         <div className="sidefoot">
+          <span>mean <b className="num">{formatMs(stats.mean, decimals)}</b></span>
           <span>σ <b className="num">{formatMs(stats.sd, decimals)}</b></span>
           <span>worst <b className="num">{formatMs(stats.worst, decimals)}</b></span>
           {stats.dnf > 0 && <span>DNF <b className="num">{stats.dnf}</b></span>}
