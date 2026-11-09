@@ -8,6 +8,18 @@ export interface Release {
 /** What each version changed, newest first, in words for people who solve rather than people who code. */
 export const CHANGELOG: Release[] = [
   {
+    version: '0.1.5',
+    date: '2026-11-09',
+    changes: [
+      'Insights leads with your numbers: every average with its best and the day you set it, median, +2 and DNF counts, and sub-X counts. Coach moves to the end.',
+      'Start a fresh session any day and switch the timer panel to All 3x3 for bests and long averages across every session. Archive old sessions, or merge two into one.',
+      'Pick which OLL cases to drill, like PLL.',
+      'The smart cube lab shows one phase bar sized by time, with moves and rotations for each phase.',
+      'Red now only marks a personal best, the timer no longer repeats the same stats twice, and the Solves table puts your time first.',
+      'Fixed: a drill could sit on "Generating scramble…" after reopening the timer.',
+    ],
+  },
+  {
     version: '0.1.4',
     date: '2026-11-08',
     changes: [
