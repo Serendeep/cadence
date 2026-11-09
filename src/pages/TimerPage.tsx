@@ -30,15 +30,19 @@ export function TimerPage({ onFocusChange }: { onFocusChange: (f: boolean) => vo
     scrambleRef.current = scramble
   })
 
+  // only the newest request may set the scramble: a slow normal scramble must not land on top of a drill one
+  const requestRef = useRef(0)
   const load = useCallback(() => {
+    const request = ++requestRef.current
     ;(drillKind ? drillScramble(drillKind, drillCases) : nextScramble(event))
       .then((text) => {
+        if (request !== requestRef.current) return
         setScrambleError(false)
         const cur = scrambleRef.current
         if (cur && cur.event === event && cur.drill === drillKind) history.current = [cur.text, ...history.current].slice(0, 20)
         setScramble({ text, event, drill: drillKind })
       })
-      .catch(() => setScrambleError(true))
+      .catch(() => request === requestRef.current && setScrambleError(true))
   }, [event, drillKind, drillCases])
 
   useEffect(() => {
