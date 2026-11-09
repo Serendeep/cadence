@@ -9,7 +9,7 @@ import { phaseDurations } from '../lib/cfop'
 import { createSession, deleteSession, updateSession } from '../lib/db'
 import { eventById } from '../lib/events'
 import { setSettings, useSettings } from '../lib/settings'
-import { rollingAverage } from '../lib/stats'
+import { mean, rollingAverage } from '../lib/stats'
 import { formatMs, formatSolve } from '../lib/time'
 import type { Solve } from '../lib/types'
 
@@ -26,6 +26,9 @@ function dayLabel(t: number, now = Date.now()): string {
   return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', ...(d.getFullYear() !== new Date(now).getFullYear() && { year: 'numeric' }) })
 }
 
+const dayHeader = (label: string, day: { count: number; mean: number | null } | undefined, dec: 2 | 3) =>
+  day ? `${label} · ${day.count.toLocaleString()} ${day.count === 1 ? 'solve' : 'solves'} · mean ${formatMs(day.mean, dec)}` : label
+
 const splitsTitle = (s: Solve) =>
   s.splits && s.splits.length > 1 ? phaseDurations(s.splits).map((d, i) => `${phaseNames(s.splits!.length, s.method)[i]} ${formatMs(d)}`).join(' · ') : undefined
 
@@ -40,6 +43,14 @@ export function SolvesPage() {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const ao5 = useMemo(() => rollingAverage(values, 5), [values])
   const ao12 = useMemo(() => rollingAverage(values, 12), [values])
+  const days = useMemo(() => {
+    const byDay = new Map<string, number[]>()
+    solves.forEach((s, i) => {
+      const k = dayKey(s.date)
+      byDay.set(k, [...(byDay.get(k) ?? []), values[i]])
+    })
+    return new Map([...byDay].map(([k, v]) => [k, { count: v.length, mean: mean(v) }]))
+  }, [solves, values])
   const rows = useMemo(() => solves.map((s, i) => ({ s, i })).reverse().slice(0, shown), [solves, shown])
   const hasComments = rows.some(({ s }) => s.comment)
   const openIndex = solves.findIndex((s) => s.id === openId)
@@ -114,8 +125,8 @@ export function SolvesPage() {
           <table className="solves-table">
             <thead>
               <tr>
-                <th className="n" style={{ width: 64 }}>#</th>
-                <th className="n">Time</th>
+                <th className="n idx">#</th>
+                <th className="lead">Time</th>
                 <th className="n">ao5</th>
                 <th className="n hide-sm">ao12</th>
                 {hasComments && <th className="hide-sm" style={{ paddingLeft: 32 }}>Comment</th>}
@@ -128,7 +139,7 @@ export function SolvesPage() {
                   ...(k === 0 || dayKey(rows[k - 1].s.date) !== dayKey(s.date)
                     ? [
                         <motion.tr key={`day-${dayKey(s.date)}`} className="dayrow" layout="position" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                          <td colSpan={hasComments ? 6 : 5}>{dayLabel(s.date)}</td>
+                          <td colSpan={hasComments ? 6 : 5}>{dayHeader(dayLabel(s.date), days.get(dayKey(s.date)), dec)}</td>
                         </motion.tr>,
                       ]
                     : []),
@@ -143,8 +154,8 @@ export function SolvesPage() {
                     title={splitsTitle(s)}
                     onKeyDown={(e) => e.key === 'Enter' && setOpenId(s.id ?? null)}
                   >
-                    <td className="n dim">{i + 1}</td>
-                    <td className={`n t ${values[i] === stats.best ? 'best' : ''}`}>{formatSolve(s)}</td>
+                    <td className="n idx">{i + 1}</td>
+                    <td className={`t lead ${values[i] === stats.best ? 'best' : ''}`}>{formatSolve(s)}</td>
                     <td className="n">{formatMs(ao5[i], dec)}</td>
                     <td className="n hide-sm">{formatMs(ao12[i], dec)}</td>
                     {hasComments && <td className="comment hide-sm" style={{ paddingLeft: 32 }}>{s.comment ?? ''}</td>}

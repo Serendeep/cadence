@@ -10,7 +10,7 @@ import { setSettings } from '../lib/settings'
 import { setSolving } from '../lib/solving'
 import { rouxProgress } from '../lib/roux'
 import { finishSolve, newTracker, resetTracker, scrambleHint, solveOpen, trackMove, type SmartFinish, type Tracker } from '../lib/smartSolve'
-import { createRotationDetector, rotationsPerPhase, solverFrame, timeline } from '../lib/rotations'
+import { createRotationDetector, solverFrame, timeline } from '../lib/rotations'
 import { inspectionPenalty } from '../lib/timerMachine'
 import { effective, formatMs } from '../lib/time'
 import type { Solve, TimedMove } from '../lib/types'
@@ -18,7 +18,8 @@ import { inspectionCaller, preloadCalls } from '../lib/voice'
 import { Twisty, type TwistyHandle } from '../components/Cube'
 import { CoachCard } from '../components/Coach'
 import { DrillBanner } from '../components/DrillBanner'
-import { Results } from '../components/Results'
+import { PhaseBar } from '../components/Bits'
+import { LastSolveControls } from '../components/Results'
 import { TimerConfigBar } from '../components/TimerConfigBar'
 import { ScrambleLine } from '../components/ScrambleLine'
 import type { TimerViewProps } from './timerTypes'
@@ -233,10 +234,6 @@ export function LabView({ data, settings, drill, scramble, scrambleError, onNewS
   const tps = solving && now > 0 ? moves.length / (now / 1000) : last?.moves && last.time ? last.moves.length / (last.time / 1000) : 0
   const hint = tracker ? scrambleHint(tracker) : null
   const lastSplits = !solving && last?.splits?.length === 4 ? last.splits : null
-  const phaseEnds = solving ? reached : lastSplits ?? []
-  const shownMethod = lastSplits ? last?.method ?? 'cfop' : method
-  const lastMoveCounts = !solving && last?.moves && lastSplits ? movesPerPhase(last.moves.map((m) => m.t), lastSplits) : null
-  const lastRotationCounts = !solving && last?.rotations && lastSplits ? rotationsPerPhase(last.rotations, lastSplits) : null
   const shownRotations = solving ? rotations.length : last?.rotations?.length
   const fullStream = solverFrame(timeline(moves, solving ? rotations : last?.rotations ?? []))
   // keyed by position in the whole solve so items keep their identity (and do not re-animate) as the list scrolls
@@ -289,8 +286,8 @@ export function LabView({ data, settings, drill, scramble, scrambleError, onNewS
       </div>
 
       <div className="labside">
-        <div className="dim" style={{ fontSize: 13 }}>
-          {paused ? 'Connection dropped. Finish the solve or discard it.' : solving ? 'Solving' : tracker?.phase === 'armed' ? 'Scrambled. The timer starts on your first turn.' : `Solve ${data.solves.length + 1}`}
+        <div className="status">
+          {paused ? 'Connection dropped. Finish the solve or discard it.' : solving ? `Solving · ${METHOD_PHASES[method][reached.length] ?? ''}` : tracker?.phase === 'armed' ? 'Scrambled. The timer starts on your first turn.' : null}
         </div>
         <motion.div className="labtime" animate={{ scale: solving ? 1.03 : 1 }} transition={{ type: 'spring', stiffness: 260, damping: 26 }}>
           {display}
@@ -300,29 +297,14 @@ export function LabView({ data, settings, drill, scramble, scrambleError, onNewS
           <div>moves<b>{solving ? moves.length : last?.moves?.length ?? '—'}</b></div>
           {settings.trackRotations && (hasGyro || shownRotations != null) && <div>rotations<b>{shownRotations ?? '—'}</b></div>}
           <div>ao5<b>{formatMs(data.stats.current[5])}</b></div>
+          <div>ao12<b>{formatMs(data.stats.current[12])}</b></div>
         </div>
 
-        <div className="phases">
-          {METHOD_PHASES[shownMethod].map((name, i) => {
-            const end = phaseEnds[i]
-            const start = i === 0 ? 0 : phaseEnds[i - 1]
-            const done = end != null
-            const current = solving && i === phaseEnds.length
-            return (
-              <div key={name} className={`ph ${current ? 'cur' : ''}`}>
-                <span>{name}</span>
-                <div className="tr">
-                  <motion.i initial={false} animate={{ scaleX: done ? 1 : current ? 0.35 : 0 }} transition={{ duration: 0.4 }} />
-                </div>
-                <b>
-                  {lastMoveCounts ? `${lastMoveCounts[i]} mv` : ''}
-                  {lastRotationCounts?.[i] ? <span className="rot"> · {lastRotationCounts[i]} rot</span> : null}
-                </b>
-                <b>{done && start != null ? formatMs(end - start) : '—'}</b>
-              </div>
-            )
-          })}
-        </div>
+        {lastSplits && (
+          <div className="labphases">
+            <PhaseBar splits={lastSplits} method={last?.method ?? 'cfop'} />
+          </div>
+        )}
 
         {tracker?.phase === 'scrambling' && hint && (
           <div className="guide">
@@ -345,26 +327,29 @@ export function LabView({ data, settings, drill, scramble, scrambleError, onNewS
             </div>
           </div>
         )}
-      </div>
 
-      <div className="ticker" aria-label="Recent moves">
-        <span>moves</span>
-        <div className="stream">
-          <AnimatePresence initial={false}>
-            {stream.map((m) => (
-              <motion.span key={m.key} className={m.rotation ? 'rot' : undefined} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.15 }}>
-                {m.rotation ? `(${m.m})` : m.m}
-              </motion.span>
-            ))}
-          </AnimatePresence>
-        </div>
+        {stream.length === 0 ? (
+          <p className="ticker-empty">Turn the cube and your moves appear here.</p>
+        ) : (
+          <div className="ticker" aria-label="Recent moves">
+            <div className="stream">
+              <AnimatePresence initial={false}>
+                {stream.map((m) => (
+                  <motion.span key={m.key} className={m.rotation ? 'rot' : undefined} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.15 }}>
+                    {m.rotation ? `(${m.m})` : m.m}
+                  </motion.span>
+                ))}
+              </AnimatePresence>
+            </div>
+          </div>
+        )}
       </div>
 
       {!solving && data.solves.length > 0 && (
         <div style={{ gridColumn: '1 / -1' }}>
           <ScrambleLine scramble={scramble} scrambleError={scrambleError} onNewScramble={onNewScramble} onPrevious={onPrevious} showText={tracker?.phase !== 'scrambling'} />
           {settings.coach && !drill && !busy && <CoachCard solves={data.solves} event={data.session?.event ?? '333'} decimals={settings.decimals} />}
-          <Results solves={data.solves} stats={data.stats} decimals={settings.decimals} />
+          {savedLast && <LastSolveControls last={savedLast} stats={data.stats} />}
         </div>
       )}
     </div>
@@ -373,6 +358,3 @@ export function LabView({ data, settings, drill, scramble, scrambleError, onNewS
 
 const TICKER_ITEMS = 28
 
-function movesPerPhase(times: number[], splits: number[]): number[] {
-  return splits.map((end, i) => times.filter((t) => t <= end && (i === 0 || t > splits[i - 1])).length)
-}
