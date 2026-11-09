@@ -16,18 +16,13 @@ const AVG_OPTIONS = [5, 12, 50, 100] as const
 const NO_SOLVES: Solve[] = []
 
 /** One sentence that states what changed, with its baseline named. */
-function finding(values: number[], stats: ReturnType<typeof sessionStats>): string {
-  if (!values.length) return ''
+/** How the latest block of solves compares with the block before it, or null with too few solves. */
+function trend(values: number[]): { block: number; recent: number; diff: number } | null {
   const block = values.length >= 100 ? 50 : values.length >= 24 ? 12 : 0
-  if (block) {
-    const recent = mean(values.slice(-block))
-    const before = mean(values.slice(-2 * block, -block))
-    if (recent != null && before != null) {
-      const d = recent - before
-      return `Your last ${block} solves average ${formatMs(recent)}, ${formatMs(Math.abs(d))} ${d <= 0 ? 'faster' : 'slower'} than the ${block} before.`
-    }
-  }
-  return `${values.length} solves so far, best single ${formatMs(stats.best)}.`
+  if (!block) return null
+  const recent = mean(values.slice(-block))
+  const before = mean(values.slice(-2 * block, -block))
+  return recent != null && before != null ? { block, recent, diff: recent - before } : null
 }
 
 export function InsightsPage() {
@@ -49,21 +44,12 @@ export function InsightsPage() {
   const bins = useMemo(() => histogram(values), [values])
   const dec = settings.decimals
 
-  const kpis: [string, number | null, string?][] = [
-    ['Best single', stats.best],
-    ['Best ao5', stats.bestAvg[5]],
-    ['Best ao12', stats.bestAvg[12]],
-    ['Best ao100', stats.bestAvg[100]],
-    ['Mean', stats.mean, `${stats.dnf} DNF`],
-    ['Std. deviation', stats.sd, stats.sd && stats.mean ? `${((stats.sd / stats.mean) * 100).toFixed(1)}% of mean` : undefined],
-  ]
 
   return (
     <div className="page">
       <div className="pagehead">
         <div>
           <h1>Insights</h1>
-          {values.length > 0 && <p>{finding(values, stats)}</p>}
         </div>
         <div className="actions">
           <Segmented
@@ -97,26 +83,13 @@ export function InsightsPage() {
   function insightsBody() {
     return (
       <>
+      <Headline values={values} stats={stats} days={days.length} decimals={dec} />
       {settings.coach && eventSolves && <CoachSection event={event} solves={eventSolves} />}
-      <div className="kpis">
-        <div className="kpi">
-          Solves<b className="num">{stats.count.toLocaleString()}</b>
-          <small>{days.length} {days.length === 1 ? 'day' : 'days'} practised</small>
-        </div>
-        {kpis.map(([label, v, sub], i) => (
-          <div key={label} className={`kpi ${i === 0 ? 'lead' : ''}`}>
-            {label}
-            <b>{formatMs(v, dec)}</b>
-            {sub && <small>{sub}</small>}
-          </div>
-        ))}
-      </div>
 
       <section className="section">
         <div className="chart-head">
           <div>
             <h2>Progress</h2>
-            <p className="sub dim" style={{ margin: 0, fontSize: 14 }}>Singles with a rolling average.</p>
           </div>
           <Segmented id="avg" label="Rolling average" value={avgN} onChange={setAvgN} options={AVG_OPTIONS.map((n) => ({ value: n, label: `ao${n}` }))} />
         </div>
@@ -137,12 +110,10 @@ export function InsightsPage() {
       <div className="grid2 section">
         <section>
           <h2>Where your times land</h2>
-          <p className="sub dim" style={{ margin: '2px 0 14px', fontSize: 14 }}>The highlighted bar holds your current ao12.</p>
           <Histogram bins={bins} highlight={stats.current[12] !== DNF ? stats.current[12] : null} />
         </section>
         <section>
           <h2>Day by day</h2>
-          <p className="sub dim" style={{ margin: '2px 0 14px', fontSize: 14 }}>Your last {days.length} practice days.</p>
           <div className="legend" style={{ marginBottom: 8 }}>
             <span><i style={{ background: 'var(--acc)' }} />daily mean</span>
             <span><i style={{ background: 'var(--dim)' }} />daily best</span>
@@ -184,12 +155,10 @@ export function InsightsPage() {
       <div className="grid2 section">
         <section>
           <h2>When you practise</h2>
-          <p className="sub dim" style={{ margin: '2px 0 14px', fontSize: 14 }}>By weekday and hour.</p>
           <Heatmap grid={grid} />
         </section>
         <section>
           <h2>Personal bests</h2>
-          <p className="sub dim" style={{ margin: '2px 0 14px', fontSize: 14 }}>New best singles, latest first.</p>
           {pbs.length ? (
             <table className="solves-table pbtable">
               <tbody>
@@ -213,4 +182,33 @@ export function InsightsPage() {
       </>
     )
   }
+}
+
+/** The one number that says where you are now, its trend, and the rest of the records in a quiet line. */
+function Headline({ values, stats, days, decimals }: { values: number[]; stats: ReturnType<typeof sessionStats>; days: number; decimals: 2 | 3 }) {
+  const lead = stats.current[12] != null ? { label: 'current ao12', v: stats.current[12] } : stats.current[5] != null ? { label: 'current ao5', v: stats.current[5] } : { label: 'best single', v: stats.best }
+  const t = trend(values)
+  const records: [string, number | null][] = [['best', stats.best], ['best ao5', stats.bestAvg[5]], ['best ao12', stats.bestAvg[12]], ['best ao100', stats.bestAvg[100]], ['mean', stats.mean], ['σ', stats.sd]]
+  return (
+    <section className="headline">
+      <div className="lead">
+        <b className="num">{formatMs(lead.v, decimals)}</b>
+        <p>
+          {lead.label}
+          {t && (
+            <>
+              <br />
+              last {t.block} average <b className="num">{formatMs(t.recent, decimals)}</b>,{' '}
+              <span className={t.diff <= 0 ? 'good' : 'bad'}>{formatMs(Math.abs(t.diff), decimals)} {t.diff <= 0 ? 'faster' : 'slower'}</span> than the {t.block} before
+            </>
+          )}
+        </p>
+      </div>
+      <p className="records">
+        <span><b className="num">{stats.count.toLocaleString()}</b> solves over {days} {days === 1 ? 'day' : 'days'}</span>
+        {records.filter(([, v]) => v != null).map(([k, v]) => <span key={k}>{k} <b className="num">{formatMs(v, decimals)}</b></span>)}
+        {stats.dnf > 0 && <span>DNF <b className="num">{stats.dnf}</b></span>}
+      </p>
+    </section>
+  )
 }

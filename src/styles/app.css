@@ -466,3 +466,13 @@ body:has(.toast) .coach-card { bottom: 96px; }
   .settings-nav a::after { content: '›'; position: absolute; right: 6px; top: 50%; transform: translateY(-50%); font-size: 22px; color: var(--faint); }
   .settings-back { display: inline-flex; align-items: center; min-height: 44px; color: var(--dim); text-decoration: none; font-size: 15px; }
 }
+
+.headline { margin-top: 8px; }
+.headline .lead { display: flex; align-items: baseline; gap: 20px; flex-wrap: wrap; }
+.headline .lead > b { font-size: clamp(52px, 7vw, 76px); font-weight: 500; letter-spacing: -0.04em; line-height: 1; }
+.headline .lead p { margin: 0; color: var(--dim); font-size: 14px; line-height: 1.55; }
+.headline .lead p b { color: var(--fg); font-weight: 600; }
+.headline .good { color: var(--good); }
+.headline .bad { color: var(--bad); }
+.headline .records { display: flex; flex-wrap: wrap; gap: 4px 20px; margin: 16px 0 0; color: var(--dim); font-size: 14px; }
+.headline .records b { color: var(--fg); font-weight: 500; }
