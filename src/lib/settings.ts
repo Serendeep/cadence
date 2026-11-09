@@ -24,7 +24,7 @@ export interface DrillMode {
   sessionId: number
   /** The session to go back to when the drill ends */
   returnTo: number | null
-  /** PLL cases to practise; null means all */
+  /** OLL or PLL cases to practise; null means all */
   cases: string[] | null
 }
 
