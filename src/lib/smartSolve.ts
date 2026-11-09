@@ -116,3 +116,20 @@ export function finishSolve(t: Tracker, method: Method = 'cfop'): { tracker: Tra
 export const resetTracker = (t: Tracker): Tracker => newTracker(t.scramble.join(' '))
 
 export const scrambledState = (scramble: string) => applyAlg(solvedCube(), splitAlg(scramble).filter(isFaceMove).join(' '))
+
+export interface PhaseCount {
+  moves: number
+  rotations: number
+}
+
+/** Moves and whole-cube rotations in each phase, by their timestamps against the cumulative splits. */
+export function phaseCounts(splits: readonly number[], moves: readonly TimedMove[], rotations: readonly TimedMove[]): PhaseCount[] {
+  const phaseOf = (t: number) => {
+    const i = splits.findIndex((end) => t <= end)
+    return i === -1 ? splits.length - 1 : i
+  }
+  const counts = splits.map(() => ({ moves: 0, rotations: 0 }))
+  for (const m of moves) counts[phaseOf(m.t)].moves++
+  for (const r of rotations) counts[phaseOf(r.t)].rotations++
+  return counts
+}

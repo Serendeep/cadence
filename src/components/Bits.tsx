@@ -2,6 +2,7 @@ import { animate, motion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 import { phaseDurations, phaseNames, type Method } from '../lib/cfop'
 import { DNF, formatMs } from '../lib/time'
+import type { PhaseCount } from '../lib/smartSolve'
 
 /** A time that rolls to its new value instead of jumping. DNF and empty values switch instantly. */
 export function AnimatedTime({ value, decimals = 2 }: { value: number | null; decimals?: 2 | 3 }) {
@@ -26,7 +27,7 @@ const GENERIC = ['var(--fg)', 'var(--acc)', 'var(--dim)', 'var(--faint)']
 
 
 /** Solve split into phases; segments grow in one after another. */
-export function PhaseBar({ splits, method, animateIn = true }: { splits: readonly number[]; method?: Method; animateIn?: boolean }) {
+export function PhaseBar({ splits, method, counts, animateIn = true }: { splits: readonly number[]; method?: Method; counts?: readonly PhaseCount[]; animateIn?: boolean }) {
   const d = phaseDurations(splits)
   const total = splits[splits.length - 1] || 1
   const names = phaseNames(d.length, method)
@@ -48,6 +49,12 @@ export function PhaseBar({ splits, method, animateIn = true }: { splits: readonl
         {d.map((v, i) => (
           <div key={i} style={{ flex: Math.max(v, 1) / total }}>
             {names[i]} <b className="num">{formatMs(v)}</b>
+            {counts?.[i] && (
+              <small>
+                {counts[i].moves} {counts[i].moves === 1 ? 'move' : 'moves'}
+                {counts[i].rotations > 0 && ` · ${counts[i].rotations} rot`}
+              </small>
+            )}
           </div>
         ))}
       </div>

@@ -9,7 +9,7 @@ import { isBlind } from '../lib/events'
 import { setSettings } from '../lib/settings'
 import { setSolving } from '../lib/solving'
 import { rouxProgress } from '../lib/roux'
-import { finishSolve, newTracker, resetTracker, scrambleHint, solveOpen, trackMove, type SmartFinish, type Tracker } from '../lib/smartSolve'
+import { finishSolve, newTracker, resetTracker, scrambleHint, solveOpen, trackMove, type SmartFinish, type Tracker, phaseCounts } from '../lib/smartSolve'
 import { createRotationDetector, solverFrame, timeline } from '../lib/rotations'
 import { inspectionPenalty } from '../lib/timerMachine'
 import { effective, formatMs } from '../lib/time'
@@ -302,7 +302,7 @@ export function LabView({ data, settings, drill, scramble, scrambleError, onNewS
 
         {lastSplits && (
           <div className="labphases">
-            <PhaseBar splits={lastSplits} method={last?.method ?? 'cfop'} />
+            <PhaseBar splits={lastSplits} method={last?.method ?? 'cfop'} counts={last?.moves?.length ? phaseCounts(lastSplits, last.moves, last.rotations ?? []) : undefined} />
           </div>
         )}
 
@@ -357,4 +357,5 @@ export function LabView({ data, settings, drill, scramble, scrambleError, onNewS
 }
 
 const TICKER_ITEMS = 28
+
 
