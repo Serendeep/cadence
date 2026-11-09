@@ -181,6 +181,11 @@ textarea { width: 100%; resize: vertical; min-height: 72px; }
 .drill-cases { display: grid; grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); gap: 6px 10px; border: 0; margin: 8px 0 4px; padding: 0 10px 0 0; }
 .drill-cases legend { padding: 0; margin-bottom: 6px; }
 .drill-cases label { display: flex; align-items: center; gap: 6px; min-height: 32px; color: var(--fg); cursor: pointer; }
+.drill-cases.grouped { display: block; max-height: 50vh; overflow-y: auto; }
+.drill-group { display: flex; flex-wrap: wrap; gap: 0 10px; padding: 2px 0; border-top: 1px solid var(--line); }
+.drill-group > label { min-width: 34px; }
+.drill-group > label:first-child { flex: 0 0 104px; color: var(--dim); }
+.drill-all { grid-column: 1 / -1; display: flex; gap: 4px; }
 .scramble {
   margin: 26px auto 0; max-width: 980px; text-align: center; color: var(--dim);
   font-size: clamp(17px, 2vw, 23px); line-height: 1.6; min-height: 2.2em; word-spacing: 0.15em;
@@ -205,6 +210,7 @@ textarea { width: 100%; resize: vertical; min-height: 72px; }
 .side.left { left: 0; }
 /* the rail-balancing padding leaves this much room past the stage's right edge */
 .side.right { right: calc(-1 * var(--rail)); }
+.side.right .seg { margin-bottom: 10px; font-size: 12px; }
 @media (min-width: 1200px) {
   .side { display: block; }
   /* the side panel already shows these */
@@ -498,3 +504,6 @@ body:has(.toast) .coach-card { bottom: 96px; }
 .subx i b { display: block; height: 100%; background: var(--fg); }
 .subx small { color: var(--faint); font-size: 12px; }
 .phaselabels small { display: block; font-size: 12px; color: var(--faint); }
+
+/* native checkboxes in ink, not browser blue */
+input[type="checkbox"] { accent-color: var(--fg); }

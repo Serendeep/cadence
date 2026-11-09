@@ -41,7 +41,11 @@ Settings > Timing > Phases splits a solve into up to eight parts. With four phas
 
 ## Sessions
 
-Each session belongs to one event and keeps its own averages. The Solves page lists the current session's solves, newest first, grouped by day, with ao5 and ao12 for each one. Pick another session from the menu at the top. "More" holds New session, Rename, Delete session and Import from csTimer.
+Each session belongs to one event and keeps its own averages. The Solves page lists the current session's solves, newest first, grouped by day, with ao5 and ao12 for each one. Pick another session from the menu at the top. "More" holds New session, Rename, Delete session and Import from csTimer, plus Archive and Merge into….
+
+The session menu above the timer shows each session's event and solve count. Archiving a session hides it from that menu without deleting anything. Archived sessions sit under "Archived (N)" at the bottom, and picking one there unarchives it; the open session always shows. Merge into… moves every solve of the current session into another session of the same event, then deletes the emptied session.
+
+The averages beside the timer can cover the current session or every session of its event: use the switch at the top of that panel, labelled with the session name and, for example, "All 3x3". The All view leaves out drill solves, and ao100 and ao1000 appear once there are that many solves. Each device remembers its choice.
 
 Click a solve to open its drawer. It shows the date, penalties, the phase bar, the scramble with a cube net, a comment field, and for smart cube solves the full reconstruction with a 3D replay.
 
@@ -69,7 +73,7 @@ It looks for four things, each only once there is enough data to trust:
 
 The finding that would save the most time per solve comes first, with a short drill. Press **Work on this** and Coach notes where you started. From then on it shows the before and after, for example `F2L: 10.60 → 9.80 s over 24 solves`, until you press **Done with this**. The finding you work on syncs with your other settings.
 
-On a 3x3 event, a slow F2L, OLL or PLL also gets **Practise this**, and F2L gets **Last slot only** as well. Pressing one opens the timer in drill mode, with scrambles that leave everything before that phase solved: the cross for F2L, the cross and three pairs for last slot, F2L for OLL, and F2L plus OLL for PLL. Scramble with white on top and green in front as usual. The drilled pieces end up on the bottom, so turn the cube over to start. A bar above the scramble shows the drill, how many solves you have done and their mean. For PLL, **Cases** lets you pick which cases come up. OLL cases are random for now. Drill solves go to their own session, such as `3x3 drills`. Coach, the Coach card and the "All 3x3" view in Insights leave them out, so practice never changes your stats. **End drill** takes you back to the session you were in. Drill mode belongs to the device it was started on and does not sync, though the drill solves do.
+On a 3x3 event, a slow F2L, OLL or PLL also gets **Practise this**, and F2L gets **Last slot only** as well. Pressing one opens the timer in drill mode, with scrambles that leave everything before that phase solved: the cross for F2L, the cross and three pairs for last slot, F2L for OLL, and F2L plus OLL for PLL. Scramble with white on top and green in front as usual. The drilled pieces end up on the bottom, so turn the cube over to start. A bar above the scramble shows the drill, how many solves you have done and their mean. For OLL and PLL, **Cases** lets you pick which cases come up. OLL cases are grouped by shape, such as Dot, Fish or Small L, and each group can be turned on or off at once. With no case picked, any case can come up. Drill solves go to their own session, such as `3x3 drills`. Coach, the Coach card and the "All 3x3" view in Insights leave them out, so practice never changes your stats. **End drill** takes you back to the session you were in. Drill mode belongs to the device it was started on and does not sync, though the drill solves do.
 
 When you come back to the timer after a break of 10 minutes or more, a card sums up the sitting you just finished: how many solves, the mean against your usual, your best, and the top finding. It goes away when you dismiss it or start the next solve.
 

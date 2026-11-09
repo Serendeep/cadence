@@ -1,7 +1,7 @@
 import { cube3x3x3 } from 'cubing/puzzles'
 import { describe, expect, it } from 'vitest'
-import { applyAlg, crossSolved, f2lSolved, isSolved, ollSolved, solvedCube, stateKey, type CubeState } from './cube'
-import { drillScramble, parity, PLL_CASES, PLL_NAMES, randomDrillData } from './drills'
+import { applyAlg, crossSolved, f2lSolved, invertAlg, isSolved, ollSolved, solvedCube, stateKey, type CubeState } from './cube'
+import { drillScramble, OLL_CASES, OLL_GROUPS, OLL_NAMES, parity, PLL_CASES, PLL_NAMES, randomDrillData } from './drills'
 import { DRILL_KINDS, type DrillKind } from './types'
 
 const AUF = ['', 'U', "U'", 'U2']
@@ -18,6 +18,12 @@ const intended: Record<DrillKind, (s: CubeState) => boolean> = {
   oll: (s) => f2lSolved(s, 'U'),
   pll: (s) => ollSolved(s, 'U'),
 }
+
+/** Which last-layer stickers show the top colour, the same for every AUF. */
+const orientation = (state: CubeState) => AUF.map((a) => applyAlg(state, a)
+  .filter((s) => s.c === 'U' && s.p[1] === 1).map((s) => `${s.p}/${s.n}`).sort().join(' ')).sort()[0]
+// mirrored by x2 again, a drill scramble has the drilled layer on U
+const flip = (wca: string) => scrambled(wca.replace(/[UDFB]/g, (m) => ({ U: 'D', D: 'U', F: 'B', B: 'F' })[m]!))
 
 /** Solved by `alg` with some AUF before and after. */
 const isCase = (state: CubeState, alg: string) => AUF.some((a) => AUF.some((b) => isSolved(applyAlg(state, `${a} ${alg} ${b}`))))
@@ -37,11 +43,38 @@ describe('drillScramble', () => {
         const wca = await drillScramble('pll', [name])
         const state = scrambled(wca)
         expect(ollSolved(state, 'U')).toBe(true)
-        // mirrored by x2 again, the scramble is the same case with the last layer on U
-        const flipped = scrambled(wca.replace(/[UDFB]/g, (m) => ({ U: 'D', D: 'U', F: 'B', B: 'F' })[m]!))
-        expect(isCase(flipped, PLL_CASES[name])).toBe(true)
+        expect(isCase(flip(wca), PLL_CASES[name])).toBe(true)
       }
     }
+  })
+
+  it('gives only the chosen OLL cases, from the white-top orientation', async () => {
+    for (const name of ['OLL 1', 'OLL 5', 'OLL 6', 'OLL 27', 'OLL 57']) {
+      for (let i = 0; i < 4; i++) {
+        const wca = await drillScramble('oll', [name])
+        expect(f2lSolved(scrambled(wca), 'U')).toBe(true)
+        expect(orientation(flip(wca))).toBe(orientation(scrambled(invertAlg(OLL_CASES[name]))))
+      }
+    }
+  })
+})
+
+describe('OLL cases', () => {
+  it('has OLL 1 to 57', () => expect(OLL_NAMES).toEqual(Array.from({ length: 57 }, (_, i) => `OLL ${i + 1}`)))
+
+  it.each(OLL_NAMES)('%s keeps F2L and orients the last layer', (name) => {
+    const state = scrambled(invertAlg(OLL_CASES[name]))
+    expect(f2lSolved(state, 'D')).toBe(true)
+    expect(ollSolved(state, 'D')).toBe(false)
+    expect(ollSolved(applyAlg(state, OLL_CASES[name]), 'D')).toBe(true)
+  })
+
+  it('has no two algorithms for the same case', () => {
+    expect(new Set(OLL_NAMES.map((n) => orientation(scrambled(invertAlg(OLL_CASES[n]))))).size).toBe(57)
+  })
+
+  it('puts every case in exactly one group', () => {
+    expect(Object.values(OLL_GROUPS).flat().sort((a, b) => a - b)).toEqual(Array.from({ length: 57 }, (_, i) => i + 1))
   })
 })
 

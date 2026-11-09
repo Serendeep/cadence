@@ -24,7 +24,7 @@ export interface DrillMode {
   sessionId: number
   /** The session to go back to when the drill ends */
   returnTo: number | null
-  /** PLL cases to practise; null means all */
+  /** OLL or PLL cases to practise; null means all */
   cases: string[] | null
 }
 
@@ -48,6 +48,8 @@ export interface Settings {
   coach: boolean
   coachFocus: CoachFocus | null
   drill: DrillMode | null
+  /** Whether the timer's side panel shows the open session or every session of its event */
+  sideScope: 'session' | 'event'
 }
 
 const DEFAULTS: Settings = {
@@ -68,6 +70,7 @@ const DEFAULTS: Settings = {
   coach: false,
   coachFocus: null,
   drill: null,
+  sideScope: 'session',
 }
 
 const KEY = 'better-cstimer:settings'
@@ -97,6 +100,7 @@ function sanitize(raw: unknown): Settings {
   }
   if (!isCoachFocus(out.coachFocus)) out.coachFocus = null
   if (!isDrillMode(out.drill)) out.drill = null
+  if (out.sideScope !== 'event') out.sideScope = 'session'
   if (!THEMES.includes(out.theme as ThemeName)) out.theme = DEFAULTS.theme
   if (!METHODS.includes(out.method as Method)) out.method = DEFAULTS.method
   // older versions stored an on/off switch

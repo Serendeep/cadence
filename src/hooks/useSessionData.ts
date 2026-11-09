@@ -46,6 +46,16 @@ export function useSessionData(): SessionData {
   return { sessions: sessions ?? [], session, solves, values, stats, loading: !sessions }
 }
 
+/** Solve count per session id, live; empty while loading. */
+export function useSessionCounts(): ReadonlyMap<number, number> {
+  return useLiveQuery(async () => {
+    const ids = await db.sessions.toCollection().primaryKeys()
+    return new Map(await Promise.all(ids.map(async (id) => [id, await db.solves.where('sessionId').equals(id).count()] as const)))
+  }, []) ?? NO_COUNTS
+}
+
+const NO_COUNTS: ReadonlyMap<number, number> = new Map()
+
 /** Every solve of one event across sessions, in date order, leaving out drill practice; undefined while loading. */
 export function useEventSolves(event: string, enabled = true): Solve[] | undefined {
   return useLiveQuery(() => (enabled ? db.solves.orderBy('date').filter((s) => s.event === event && !s.drill).toArray() : NO_SOLVES), [event, enabled])
