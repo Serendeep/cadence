@@ -22,7 +22,7 @@ const REQUEST_TIMEOUT_MS = 30_000
 // re-send edits from just before the last push, in case one was being written while that push read the database
 const PUSH_OVERLAP_MS = 1000
 // these describe this device, not the solver, so they never sync
-const LOCAL_ONLY: readonly (keyof Settings)[] = ['input', 'sessionId', 'shareDiagnostics', 'drill']
+const LOCAL_ONLY: readonly (keyof Settings)[] = ['input', 'sessionId', 'shareDiagnostics', 'drill', 'sideScope']
 
 type Kind = 'session' | 'solve' | 'settings'
 export interface SyncRecord {
@@ -144,7 +144,7 @@ async function localChanges(): Promise<SyncRecord[]> {
 
 function cleanSession(d: Record<string, unknown>): Omit<Session, 'id' | 'uid' | 'updated'> | null {
   if (typeof d.name !== 'string' || typeof d.event !== 'string') return null
-  return { name: d.name, event: d.event, created: finite(d.created) ? d.created : Date.now(), order: finite(d.order) ? d.order : 0 }
+  return { name: d.name, event: d.event, created: finite(d.created) ? d.created : Date.now(), order: finite(d.order) ? d.order : 0, archived: d.archived === true }
 }
 
 /** Newest edit wins; a local deletion newer than the incoming edit wins too. */

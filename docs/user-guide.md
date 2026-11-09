@@ -41,7 +41,11 @@ Settings > Timing > Phases splits a solve into up to eight parts. With four phas
 
 ## Sessions
 
-Each session belongs to one event and keeps its own averages. The Solves page lists the current session's solves, newest first, grouped by day, with ao5 and ao12 for each one. Pick another session from the menu at the top. "More" holds New session, Rename, Delete session and Import from csTimer.
+Each session belongs to one event and keeps its own averages. The Solves page lists the current session's solves, newest first, grouped by day, with ao5 and ao12 for each one. Pick another session from the menu at the top. "More" holds New session, Rename, Delete session and Import from csTimer, plus Archive and Merge into….
+
+The session menu above the timer shows each session's event and solve count. Archiving a session hides it from that menu without deleting anything. Archived sessions sit under "Archived (N)" at the bottom, and picking one there unarchives it; the open session always shows. Merge into… moves every solve of the current session into another session of the same event, then deletes the emptied session.
+
+The averages beside the timer can cover the current session or every session of its event: use the switch at the top of that panel, labelled with the session name and, for example, "All 3x3". The All view leaves out drill solves, and ao100 and ao1000 appear once there are that many solves. Each device remembers its choice.
 
 Click a solve to open its drawer. It shows the date, penalties, the phase bar, the scramble with a cube net, a comment field, and for smart cube solves the full reconstruction with a 3D replay.
 

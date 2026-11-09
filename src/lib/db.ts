@@ -112,6 +112,19 @@ export async function deleteSession(id: number): Promise<void> {
   })
 }
 
+/** Moves every solve of `sourceId` into `targetId` and deletes the emptied source, all or nothing. */
+export async function mergeSession(sourceId: number, targetId: number): Promise<void> {
+  if (sourceId === targetId) throw new Error('A session cannot be merged into itself.')
+  await db.transaction('rw', db.sessions, db.solves, db.tombstones, async () => {
+    const [source, target] = await Promise.all([db.sessions.get(sourceId), db.sessions.get(targetId)])
+    if (!source || !target) throw new Error('That session no longer exists.')
+    // modify() runs the updating hook, so each moved solve gets a fresh edit time and syncs with its new session
+    await db.solves.where('sessionId').equals(sourceId).modify({ sessionId: targetId })
+    await db.tombstones.bulkPut(tombstonesFor('session', [source]))
+    await db.sessions.delete(sourceId)
+  })
+}
+
 // a fresh edit time, so a solve restored with Undo beats the deletion it reverses
 export const addSolve = (s: Omit<Solve, 'id'>) => db.solves.add({ ...s, updated: Date.now() })
 export const updateSolve = (id: number, patch: Partial<Solve>) => db.solves.update(id, patch)

@@ -89,7 +89,7 @@ export function FocusView({ data, settings, drill, scramble, scrambleError, onNe
         </motion.div>
         )}
         <div className="hint chrome">{hint}</div>
-        <TimerSides solves={data.solves} values={data.values} stats={data.stats} decimals={dec} />
+        <TimerSides session={data.session} solves={data.solves} values={data.values} stats={data.stats} decimals={dec} />
       </div>
 
       <div className="band bottom chrome">

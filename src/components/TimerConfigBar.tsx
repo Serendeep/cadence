@@ -1,9 +1,11 @@
-import type { SessionData } from '../hooks/useSessionData'
+import { useState } from 'react'
+import { useSessionCounts, type SessionData } from '../hooks/useSessionData'
 import { createSession, updateSession } from '../lib/db'
 import { connectCube, connectExternal, disconnectCube, disconnectExternal, useDevices, type CubeKind } from '../lib/deviceStore'
 import { bluetoothAvailable } from '../lib/devices'
 import { EVENTS, eventById, isBlind } from '../lib/events'
 import { setSettings, type InputMethod, type Settings } from '../lib/settings'
+import type { Session } from '../lib/types'
 import { Menu } from './Menu'
 
 const INPUT_LABEL: Record<InputMethod, string> = { keyboard: 'keyboard', typing: 'typing', stackmat: 'stackmat', gantimer: 'gan timer', smartcube: 'smart cube' }
@@ -11,7 +13,22 @@ const INPUT_LABEL: Record<InputMethod, string> = { keyboard: 'keyboard', typing:
 /** Event, session, inspection, input and phases as a row of quiet text menus. */
 export function TimerConfigBar({ data, settings }: { data: SessionData; settings: Settings }) {
   const devices = useDevices()
+  const counts = useSessionCounts()
+  const [showArchived, setShowArchived] = useState(false)
   const ev = eventById(data.session?.event ?? '333')
+  const isOpen = (s: Session) => s.id === data.session?.id
+  const archived = data.sessions.filter((s) => s.archived && !isOpen(s))
+  const sessionItem = (s: Session) => ({
+    key: String(s.id),
+    label: s.name,
+    hint: `${eventById(s.event).short} · ${(counts.get(s.id!) ?? 0).toLocaleString()}`,
+    checked: isOpen(s),
+    onSelect: () => {
+      // the open session always shows in the menu, so picking an archived one brings it back
+      if (s.archived) void updateSession(s.id!, { archived: false })
+      setSettings({ sessionId: s.id! })
+    },
+  })
 
   const chooseEvent = async (id: string) => {
     const s = data.session
@@ -50,13 +67,19 @@ export function TimerConfigBar({ data, settings }: { data: SessionData; settings
         label="Session"
         trigger={<>session <b>{data.session?.name ?? '…'}</b></>}
         items={[
-          ...data.sessions.map((s) => ({ key: String(s.id), label: s.name, hint: eventById(s.event).short, checked: s.id === data.session?.id, onSelect: () => setSettings({ sessionId: s.id! }) })),
+          ...data.sessions.filter((s) => !archived.includes(s)).map(sessionItem),
           'sep' as const,
           {
             key: 'new',
             label: 'New session',
             onSelect: () => void createSession(`${ev.short} ${data.sessions.length + 1}`, ev.id).then((id) => setSettings({ sessionId: id })),
           },
+          ...(archived.length
+            ? [
+                { key: 'archived', label: `Archived (${archived.length})`, hint: showArchived ? '‹' : '›', keepOpen: true, onSelect: () => setShowArchived((v) => !v) },
+                ...(showArchived ? archived.map(sessionItem) : []),
+              ]
+            : []),
         ]}
       />
       {isBlind(ev.id) ? (

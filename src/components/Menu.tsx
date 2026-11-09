@@ -6,6 +6,8 @@ export interface MenuItem {
   label: ReactNode
   hint?: ReactNode
   checked?: boolean
+  /** Leaves the menu open, for entries that change what it lists */
+  keepOpen?: boolean
   onSelect: () => void
 }
 
@@ -66,7 +68,7 @@ export function Menu({ trigger, label, items, className }: MenuProps) {
                   role="menuitemradio"
                   aria-checked={it.checked ?? false}
                   onClick={() => {
-                    setOpen(false)
+                    if (!it.keepOpen) setOpen(false)
                     it.onSelect()
                   }}
                 >
