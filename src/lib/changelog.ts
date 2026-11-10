@@ -8,6 +8,16 @@ export interface Release {
 /** What each version changed, newest first, in words for people who solve rather than people who code. */
 export const CHANGELOG: Release[] = [
   {
+    version: '0.1.6',
+    date: '2026-11-10',
+    changes: [
+      'A tap or key press always stops the timer. Manual phase splits are gone; a connected smart cube still splits every solve on its own.',
+      'With input set to smart cube and no cube connected, the timer says so.',
+      'No more pile of empty "Main" sessions: every device shares one, and the extra empty ones are removed after your next sync.',
+      'Menus near the edge of a phone screen stay fully on screen.',
+    ],
+  },
+  {
     version: '0.1.5',
     date: '2026-11-09',
     changes: [
