@@ -44,47 +44,49 @@ Turn on Inspection in Settings, or tap "inspection off" above the scramble. Pres
 
 A connected smart cube splits each solve into four phases on its own, named after the method in Settings > Timing > Method:
 
-- **CFOP:** Cross, F2L, OLL, PLL
-- **Roux:** First block, Second block, CMLL, LSE
+- CFOP: Cross, F2L, OLL, PLL
+- Roux: First block, Second block, CMLL, LSE
 
 A bar under the time shows how long each phase took. Timing with the keyboard, touch or an external timer gives no splits: a press always stops the timer.
 
 ### Other timing settings
 
-- **Hold to start:** how long space or a touch must be held before the time turns green, from instant to one second.
-- **While solving:** show the running time, only whole seconds, or nothing.
-- **Precision and preview:** two or three decimals, and whether the scramble preview is shown.
-- **Keep the screen on:** stops a phone or laptop from dimming or locking while Cadence is open.
+| Setting | What it does |
+| --- | --- |
+| Hold to start | How long space or a touch must be held before the time turns green, from instant to one second |
+| While solving | Shows the running time, only whole seconds, or nothing |
+| Precision and preview | Two or three decimals, and whether the scramble preview is shown |
+| Keep the screen on | Stops a phone or laptop from dimming or locking while Cadence is open |
 
 ## Sessions
 
 Each session belongs to one event and keeps its own averages.
 
-**The Solves page** lists the current session's solves, newest first and grouped by day, with ao5 and ao12 for each. Pick another session from the menu at the top. "More" holds New session, Rename, Delete session, Import from csTimer, Archive and Merge into….
+The Solves page lists the current session's solves, newest first and grouped by day, with ao5 and ao12 for each. Pick another session from the menu at the top. "More" holds New session, Rename, Delete session, Import from csTimer, Archive and Merge into….
 
-**The session menu above the timer** shows each session's event and solve count.
+The session menu above the timer shows each session's event and solve count.
 
-- **Archive** hides a session from that menu without deleting anything. Archived sessions sit under "Archived (N)" at the bottom; picking one there unarchives it. The open session always shows.
-- **Merge into…** moves every solve of the current session into another session of the same event, then deletes the emptied session.
+- Archive hides a session from that menu without deleting anything. Archived sessions sit under "Archived (N)" at the bottom; picking one there unarchives it. The open session always shows.
+- Merge into… moves every solve of the current session into another session of the same event, then deletes the emptied session.
 
-**Changing the event** above the timer switches to your session for that event, or makes one. If the current session has no solves yet, Cadence changes that session's event instead.
+Changing the event above the timer switches to your session for that event, or makes one. If the current session has no solves yet, Cadence changes that session's event instead.
 
-**The averages beside the timer** can cover the current session or every session of its event. Use the switch at the top of that panel, labelled with the session name and, for example, "All 3x3". A few details:
+The averages beside the timer can cover the current session or every session of its event. Use the switch at the top of that panel, labelled with the session name and, for example, "All 3x3". A few details:
 
 - The All view leaves out drill solves.
 - ao100 and ao1000 appear once there are that many solves.
 - Each device remembers its own choice.
 
-**The solve drawer** opens when you click a solve. It shows the date, penalties, the phase bar, the scramble with a cube net and a comment field. Smart cube solves also get the full reconstruction and a 3D replay.
+The solve drawer opens when you click a solve. It shows the date, penalties, the phase bar, the scramble with a cube net and a comment field. Smart cube solves also get the full reconstruction and a 3D replay.
 
 ## Insights
 
 Insights describes the current session, or every session of the same event with the switch at the top right. The top shows your solve counts, best single, averages and standard deviation. Below that:
 
-- **Progress:** every single, with a rolling ao5, ao12, ao50 or ao100 drawn over it.
-- **Where your times land:** how many solves fall in each time bucket. The highlighted bar holds your current ao12.
-- **Day by day:** the daily mean and best over your last 60 practice days.
-- **Phases and PBs:** phase averages when your solves have splits, and a timeline of personal bests.
+- Progress: every single, with a rolling ao5, ao12, ao50 or ao100 drawn over it.
+- Where your times land: how many solves fall in each time bucket. The highlighted bar holds your current ao12.
+- Day by day: the daily mean and best over your last 60 practice days.
+- Phase averages and PBs: phase averages when your solves have splits, and a timeline of personal bests.
 
 ## Coach
 
@@ -103,11 +105,11 @@ Each check runs only once there is enough data to trust.
 
 The finding that would save the most time per solve comes first, with a short drill.
 
-Press **Work on this** and Coach notes where you started. From then on it shows the before and after, for example `F2L: 10.60 → 9.80 s over 24 solves`, until you press **Done with this**. The finding you work on syncs with your other settings.
+Press Work on this and Coach notes where you started. From then on it shows the before and after, for example `F2L: 10.60 → 9.80 s over 24 solves`, until you press Done with this. The finding you work on syncs with your other settings.
 
 ### Drills
 
-On a 3x3 event, a slow F2L, OLL or PLL also gets a **Practise this** button, and F2L gets **Last slot only** too. Each opens the timer in drill mode, with scrambles that leave everything before that phase solved:
+On a 3x3 event, a slow F2L, OLL or PLL also gets a Practise this button, and F2L gets Last slot only too. Each opens the timer in drill mode, with scrambles that leave everything before that phase solved:
 
 | Drill | Already solved |
 | --- | --- |
@@ -118,9 +120,9 @@ On a 3x3 event, a slow F2L, OLL or PLL also gets a **Practise this** button, and
 
 Scramble with white on top and green in front as usual. The drilled pieces end up on the bottom, so turn the cube over to start. A bar above the scramble shows the drill, how many solves you have done and their mean.
 
-**Picking cases.** For OLL and PLL, **Cases** lets you choose which cases come up. OLL cases are grouped by shape, such as Dot, Fish or Small L, and you can turn a whole group on or off. With no case picked, any case can come up.
+For OLL and PLL, Cases lets you choose which cases come up. OLL cases are grouped by shape, such as Dot, Fish or Small L, and you can turn a whole group on or off. With no case picked, any case can come up.
 
-**Where drill solves go.** They go to their own session, such as `3x3 drills`. Coach, the Coach card and the "All 3x3" view leave them out, so practice never changes your stats. **End drill** takes you back to the session you were in.
+Drill solves go to their own session, such as `3x3 drills`. Coach, the Coach card and the "All 3x3" view leave them out, so practice never changes your stats. End drill takes you back to the session you were in.
 
 Drill mode belongs to the device it was started on and does not sync. The drill solves themselves do.
 
@@ -141,13 +143,13 @@ A Cadence backup file imports the same way.
 
 ## Backups and export
 
-**Export.** Settings > Your data > Export saves either a full Cadence backup (`.json`) or a file in csTimer's format, so your solves can go back to csTimer.
+Settings > Your data > Export saves either a full Cadence backup (`.json`) or a file in csTimer's format, so your solves can go back to csTimer.
 
-**Automatic backups (desktop app).** Once a day while it runs, the desktop app saves `cadence-backup-YYYY-MM-DD.json` to a `backups` folder inside its data folder. It keeps the newest seven. Settings > Your data > Automatic backups > Open folder shows them, and any of them imports like an exported backup.
+The desktop app also backs up on its own. Once a day while it runs, it saves `cadence-backup-YYYY-MM-DD.json` to a `backups` folder inside its data folder. It keeps the newest seven. Settings > Your data > Automatic backups > Open folder shows them, and any of them imports like an exported backup.
 
-**In a browser,** Cadence asks for persistent storage so the browser is less likely to clear your solves. Signing in to sync or installing the app is still the safer way to keep them.
+In a browser, Cadence asks for persistent storage so the browser is less likely to clear your solves. Signing in to sync or installing the app is still the safer way to keep them.
 
-**Delete everything.** Settings > Your data > Delete everything removes all sessions and solves from this device. If you are signed in, it signs this device out first, so the copy in your account stays.
+Settings > Your data > Delete everything removes all sessions and solves from this device. If you are signed in, it signs this device out first, so the copy in your account stays.
 
 ## Sync
 
@@ -162,18 +164,18 @@ Once you're signed in, Cadence syncs:
 
 The account row shows when it last synced, and Sync now runs one straight away.
 
-**What syncs:** sessions, solves, penalties, comments, smart cube moves and rotations, and settings such as theme, inspection and method.
+What syncs: sessions, solves, penalties, comments, smart cube moves and rotations, and settings such as theme, inspection and method.
 
-**What stays on each device:** settings that describe the device rather than you. That's the input (keyboard, Stackmat, smart cube), the session currently open, and Share diagnostics.
+What stays on each device: settings that describe the device rather than you. That's the input (keyboard, Stackmat, smart cube), the session currently open, and Share diagnostics.
 
-**When devices disagree,** the later change wins. One exception protects your solves: if you delete a session on one device while another device has unsynced solves in it, those solves are kept and the session comes back.
+When devices disagree, the later change wins. One exception protects your solves: if you delete a session on one device while another device has unsynced solves in it, those solves are kept and the session comes back.
 
-**Signing out** keeps your solves on the device. **Delete synced data** erases the copy kept for syncing and signs out every device; each device keeps the solves it already has.
+Signing out keeps your solves on the device. Delete synced data erases the copy kept for syncing and signs out every device; each device keeps the solves it already has.
 
 ## Installing and updates
 
 See [Install](../README.md#install) in the README for phones, browsers and the desktop apps.
 
-After an update, the timer offers a short **What's new** list that opens only if you tap it. The same list, the version you run, and links to star or share the project are under Settings > About.
+After an update, the timer offers a short What's new list that opens only if you tap it. The same list, the version you run, and links to star or share the project are under Settings > About.
 
 Once you have used Cadence for a while (100 solves over 3 days, then 300 solves), it asks once each whether you would star it and share it. Closing either message means it never asks again.

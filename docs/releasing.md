@@ -41,8 +41,8 @@ Migration `v1` (`new_sqlite_classes`) created the `UserStore` class. Renaming or
 
 Two GitHub workflows handle the desktop apps:
 
-- **`desktop`** checks macOS packaging on branch pushes.
-- **`release`** builds Windows, macOS and Linux from tags.
+- `desktop` checks macOS packaging on branch pushes.
+- `release` builds Windows, macOS and Linux from tags.
 
 To cut a release:
 
@@ -51,7 +51,7 @@ npm version patch       # or minor; commits and tags vX.Y.Z
 git push --follow-tags
 ```
 
-The `release` workflow runs the tests, builds all three platforms and uploads them to a **draft** release on GitHub. Installed apps see the update only once you publish the draft, so first check that every platform's files are attached.
+The `release` workflow runs the tests, builds all three platforms and uploads them to a draft release on GitHub. Installed apps see the update only once you publish the draft, so first check that every platform's files are attached.
 
 ### What each platform gets
 

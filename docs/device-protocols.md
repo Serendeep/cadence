@@ -16,8 +16,8 @@ Notes on the wire formats Cadence speaks, for anyone fixing or adding a driver. 
 
 Every packet is 20 bytes, encrypted with AES-128.
 
-- **Key and IV:** fixed tables, with the cube's MAC added to the first six bytes. The MAC bytes go in reverse order, and the sum is taken modulo 255.
-- **Decrypting:** the first 16 bytes and the last 16 bytes are each decrypted as one AES block and XORed with the IV.
+- The key and IV are fixed tables, with the cube's MAC added to the first six bytes. The MAC bytes go in reverse order, and the sum is taken modulo 255.
+- To decrypt, the first 16 bytes and the last 16 bytes are each decrypted as one AES block and XORed with the IV.
 
 ### Messages
 
@@ -32,9 +32,9 @@ The first decrypted byte is the message type.
 | 171 | gyroscope |
 | 172 | gyroscope acknowledgement |
 
-- **Gyroscope on and off.** Request 172 with payload `[0, 1]` turns the stream on, and `[0, 0]` turns it off.
-- **Gyroscope readings (171).** A quaternion as four little-endian int32 values at bytes 1 to 16, each divided by 2³⁰, in the order w, x, −z, y. Tested on a V10 AI: after that reordering, the axes already match the screen (+X is R, +Y is U, +Z is F).
-- **Moves (165).** A move counter and up to five moves of 5 bits each, plus their time gaps. Moves are indexes into `FBUDLR`, and odd values mean counter-clockwise. Moves the counter says were missed are logged as lost.
+- Request 172 with payload `[0, 1]` turns the stream on, and `[0, 0]` turns it off.
+- A gyroscope packet (171) holds a quaternion as four little-endian int32 values at bytes 1 to 16, each divided by 2³⁰, in the order w, x, −z, y. Tested on a V10 AI: after that reordering, the axes already match the screen (+X is R, +Y is U, +Z is F).
+- A moves packet (165) holds a move counter and up to five moves of 5 bits each, plus their time gaps. Moves are indexes into `FBUDLR`, and odd values mean counter-clockwise. Moves the counter says were missed are logged as lost.
 
 ### Finding the MAC
 

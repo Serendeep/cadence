@@ -39,8 +39,6 @@ Dexie hooks fill in `uid` and `updated` on every write, so callers don't have to
 
 The first-launch "Main" session is the one exception. It always gets the fixed uid `default-main-333`, so every device's first "Main" is the same session to sync instead of a new copy. Earlier versions did make copies, so `removeEmptyMainsOnce` deletes empty extra "Main" 3x3 sessions once per device. A signed-out device does this at launch. A signed-in device waits for a full sync, so no session is removed while its solves are still arriving.
 
-### Writes
-
 All writes go through the functions in `db.ts`.
 
 - `deleteSolve` and `deleteSession` leave tombstones.
@@ -101,10 +99,10 @@ Electron has no Bluetooth chooser of its own. Its `select-bluetooth-device` even
 
 `src/lib/cube.ts` is a small sticker model of a 3x3. It applies face turns and checks the cross, F2L and OLL on any face. Four modules build on it:
 
-- **`smartSolve.ts`** follows the physical cube through the scramble, spotting wrong turns and half-done double turns. It arms the timer and finishes the solve when the model is solved.
-- **`cfop.ts`** finds the phase ends. It picks the face whose F2L was finished first, and each phase ends the first time its state is reached on that face. "First reached" matters: F2L inserts lift cross edges out for a move, so the cross can't be read as "solved from here on".
-- **`orientation.ts`** turns the cube's gyroscope quaternion into screen axes, relative to the reading taken at Reset orientation. `components/Cube.tsx` eases the 3D cube towards it.
-- **`rotations.ts`** snaps the orientation to the nearest of the 24 square positions and reports a rotation once a new position holds for 250 ms. A change within 300 ms of a face turn on the same axis is a slice or wide move, and is ignored. `solverFrame()` renames moves after each rotation, because smart cubes name turns by centre colour, not by where the face is.
+- `smartSolve.ts` follows the physical cube through the scramble, spotting wrong turns and half-done double turns. It arms the timer and finishes the solve when the model is solved.
+- `cfop.ts` finds the phase ends. It picks the face whose F2L was finished first, and each phase ends the first time its state is reached on that face. "First reached" matters: F2L inserts lift cross edges out for a move, so the cross can't be read as "solved from here on".
+- `orientation.ts` turns the cube's gyroscope quaternion into screen axes, relative to the reading taken at Reset orientation. `components/Cube.tsx` eases the 3D cube towards it.
+- `rotations.ts` snaps the orientation to the nearest of the 24 square positions and reports a rotation once a new position holds for 250 ms. A change within 300 ms of a face turn on the same axis is a slice or wide move, and is ignored. `solverFrame()` renames moves after each rotation, because smart cubes name turns by centre colour, not by where the face is.
 
 ## Statistics and Insights
 
@@ -113,9 +111,9 @@ Electron has no Bluetooth chooser of its own. Its `select-bluetooth-device` even
 
 ## Web app and desktop
 
-**Web app.** `vite-plugin-pwa` builds a service worker that caches the app for offline use. It asks before reloading into a new version and never caches `/api/`. `pwa.ts` handles the install prompt.
+On the web, `vite-plugin-pwa` builds a service worker that caches the app for offline use. It asks before reloading into a new version and never caches `/api/`. `pwa.ts` handles the install prompt.
 
-**Desktop.** Electron loads the built app from a custom `app://` scheme, which gives it a real origin for IndexedDB and Bluetooth. It also:
+On the desktop, Electron loads the built app from a custom `app://` scheme, which gives it a real origin for IndexedDB and Bluetooth. It also:
 
 - turns on Chromium's experimental web platform features, for Bluetooth advertisements on Linux;
 - checks GitHub Releases for updates, with `electron/updateMode.cjs` deciding between installing and only linking.
@@ -128,6 +126,6 @@ Electron has no Bluetooth chooser of its own. Its `select-bluetooth-device` even
 - Other `/api/*` paths go to `api.ts`. [sync.md](sync.md) describes sign-in and sync.
 - Everything else is a static file from `dist/`.
 
-**Diagnostics** (`src/lib/diag.ts`) are off unless the user turns them on. Batches go to `/api/log` and show up in Workers Logs, one line per entry.
+Diagnostics (`src/lib/diag.ts`) are off unless the user turns them on. Batches go to `/api/log` and show up in Workers Logs, one line per entry.
 
-**Sync timeouts.** Client sync requests time out after 30 seconds. A timeout releases the syncing state and allows a retry. The client moves its saved push checkpoint forward only after a full sync succeeds. `src/lib/syncTimeout.test.ts` covers a stalled request followed by a successful retry.
+Client sync requests time out after 30 seconds. A timeout releases the syncing state and allows a retry. The client moves its saved push checkpoint forward only after a full sync succeeds. `src/lib/syncTimeout.test.ts` covers a stalled request followed by a successful retry.

@@ -6,8 +6,8 @@ Cadence works with Bluetooth smart cubes, the GAN Smart Timer and a Stackmat. Co
 
 Bluetooth needs Chrome, Edge or Opera, or the Cadence desktop app. Safari and Firefox have every other feature.
 
-- **iPhone and iPad:** no browser there can reach Bluetooth devices, so smart cubes don't work.
-- **Linux:** the desktop app is the most reliable choice, because it ships its own Chromium with Bluetooth turned on.
+- iPhone and iPad: no browser there can reach Bluetooth devices, so smart cubes don't work.
+- Linux: the desktop app is the most reliable choice, because it ships its own Chromium with Bluetooth turned on.
 
 ## Connecting a cube
 
@@ -21,10 +21,10 @@ Click MoYu V10 AI / MoYu32 and pick the cube. Its name starts with `WCU_MY3`.
 
 These cubes encrypt their moves with their own Bluetooth address (MAC), so Cadence has to know it. It tries four sources in order:
 
-1. **The cube itself.** The cube broadcasts its address, and Cadence reads it when the browser lets it see those broadcasts. The desktop app always does. Chrome on Android, Windows and macOS does only after you open `chrome://flags`, turn on **Experimental Web Platform features** and restart Chrome.
-2. **An earlier connection.** Once a cube has connected properly, Cadence remembers its address.
-3. **Its name.** Cadence guesses the address from the cube's name. The guess is right for many cubes, but not all.
-4. **You.** If the cube doesn't answer, Cadence asks. A Bluetooth scanner app such as nRF Connect shows the address next to the cube's name. On Linux, `bluetoothctl devices` lists it.
+1. The cube itself. It broadcasts its address, and Cadence reads it when the browser lets it see those broadcasts. The desktop app always does. Chrome on Android, Windows and macOS does only after you open `chrome://flags`, turn on **Experimental Web Platform features** and restart Chrome.
+2. An earlier connection. Once a cube has connected properly, Cadence remembers its address.
+3. Its name. Cadence guesses the address from the cube's name. The guess is right for many cubes, but not all.
+4. You. If the cube doesn't answer, Cadence asks. A Bluetooth scanner app such as nRF Connect shows the address next to the cube's name. On Linux, `bluetoothctl devices` lists it.
 
 The first answer after connecting can take up to ten seconds, so Cadence waits before deciding the address is wrong.
 
@@ -48,8 +48,8 @@ The timer starts on your first turn after the scramble and stops the moment the 
 
 The phases fill in as you reach them, on whichever colour you solve from:
 
-- **CFOP:** Cross, F2L, OLL, PLL.
-- **Roux** (set the method in Settings > Timing): First block, Second block, CMLL, LSE. Cadence finds your blocks on any side and colour. M moves reach Cadence as turns of both outer layers, and they don't break the blocks. CMLL counts as done once the top corners match the blocks, even before the last U turn.
+- CFOP: Cross, F2L, OLL, PLL.
+- Roux (set the method in Settings > Timing): First block, Second block, CMLL, LSE. Cadence finds your blocks on any side and colour. M moves reach Cadence as turns of both outer layers, and they don't break the blocks. CMLL counts as done once the top corners match the blocks, even before the last U turn.
 
 ### After the solve
 
@@ -57,20 +57,20 @@ Each phase shows its time and move count, and the live stats show turns per seco
 
 ### When something goes wrong
 
-- **The cube and the screen disagree**, for example after you reset the cube by hand: solve the real cube and press Mark solved.
-- **The timer keeps running after you solve:** the cube's last turn never reached Cadence. Press Finish solve. The solve stops at the last turn that did arrive and is saved.
+- The cube and the screen disagree, for example after you reset the cube by hand: solve the real cube and press Mark solved.
+- The timer keeps running after you solve: the cube's last turn never reached Cadence. Press Finish solve. The solve stops at the last turn that did arrive and is saved.
 
 ## Rotations
 
 On cubes with a gyroscope, Cadence notices when you turn the whole cube, such as a y before the last F2L pair or an x2 before the last layer.
 
-**What counts.** A rotation counts once the cube has settled in its new position for a quarter of a second, so wrist tilts and wobbles don't count. Slice moves (M, E, S) and wide moves turn the cube's core too, but they arrive together with face turns on the same axis, and Cadence leaves those out.
+A rotation counts once the cube has settled in its new position for a quarter of a second, so wrist tilts and wobbles don't count. Slice moves (M, E, S) and wide moves turn the cube's core too, but they arrive together with face turns on the same axis, and Cadence leaves those out.
 
-**Where they show.** In brackets in the move strip and the reconstruction, as a count in the stats, and per phase. Moves after a rotation are named the way you saw them: after a `(y)`, the turn of the face now in front of you is written F.
+Rotations show in brackets in the move strip and the reconstruction, as a count in the stats, and per phase. Moves after a rotation are named the way you saw them: after a `(y)`, the turn of the face now in front of you is written F.
 
-**Lining up.** Hold the cube with white on top and green in front, and press Reset orientation.
+To line the screen up with your hands, hold the cube with white on top and green in front, and press Reset orientation.
 
-**Turning it off.** Tracking uses a little more battery. Settings > Devices > Track cube rotations turns it off.
+Tracking uses a little more battery; Settings > Devices > Track cube rotations turns it off.
 
 ## GAN Smart Timer
 

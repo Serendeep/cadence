@@ -38,8 +38,8 @@ A signed-in device holds a bearer token:
 
 Why it's built this way:
 
-- **The token travels only in the URL fragment.** Browsers never send the fragment to servers or put it in `Referer`.
-- **The nonce blocks planted tokens.** Without it, a crafted link carrying someone else's token could sign a device into that account and upload its solves there.
+- The token travels only in the URL fragment, which browsers never send to servers or put in `Referer`.
+- The nonce blocks planted tokens. Without it, a crafted link carrying someone else's token could sign a device into that account and upload its solves there.
 
 ## Desktop sign-in
 
@@ -78,13 +78,13 @@ The client repeats until it has nothing left to push and `more` is false.
 
 `pushAndPull` in `sync.ts` does the device's half.
 
-**Pushing**
+Pushing:
 
 - Local changes are rows with `updated` above `pushedAt`, plus the tombstones, plus the settings if they changed. `pushedAt` is the start of the last full push, minus a second of overlap.
 - Sessions go before solves, and changes go up 200 at a time.
 - Tombstones are deleted once the server has them.
 
-**Pulling**
+Pulling:
 
 - Incoming records are applied in one Dexie transaction, without counting as local edits. Sessions come before solves.
 - The newest edit wins. A local deletion newer than an incoming edit wins too.
