@@ -22,6 +22,36 @@ export interface SmartCubeConnection {
 
 export const bluetoothAvailable = () => typeof navigator !== 'undefined' && 'bluetooth' in navigator
 
+const platform = () => (navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData?.platform
+// watchAdvertisements exists on Linux/ChromeOS but never fires there
+export const advertisementsNeverFire = () => platform() === 'Linux' || platform() === 'Chrome OS'
+
+/** Devices this site was allowed to use before; empty where the browser keeps no such permission (Chrome without its flag). */
+export async function knownDevices(): Promise<BluetoothDevice[]> {
+  const bt = navigator.bluetooth as Bluetooth & { getDevices?: () => Promise<BluetoothDevice[]> }
+  return bt?.getDevices ? bt.getDevices().catch(() => []) : []
+}
+
+/** Resolves true once the device advertises (switched on and near), false on timeout or `stop()`; true at once where advertisements cannot be watched. */
+export function whenInRange(device: BluetoothDevice, ms: number, stop: () => boolean): Promise<boolean> {
+  if (!('watchAdvertisements' in device) || advertisementsNeverFire()) return Promise.resolve(true)
+  const abort = new AbortController()
+  return new Promise((resolve) => {
+    const started = performance.now()
+    const poll = window.setInterval(() => (stop() || performance.now() - started > ms) && done(false), 1000)
+    function done(seen: boolean) {
+      window.clearInterval(poll)
+      device.removeEventListener('advertisementreceived', onAdv)
+      abort.abort()
+      resolve(seen)
+    }
+    const onAdv = () => done(true)
+    device.addEventListener('advertisementreceived', onAdv)
+    // a device the browser cannot watch is still worth one connection attempt
+    device.watchAdvertisements({ signal: abort.signal }).catch(() => done(true))
+  })
+}
+
 export async function connectGan(h: SmartCubeHandlers, device?: BluetoothDevice): Promise<SmartCubeConnection> {
   const { connectGanCube } = await import('gan-web-bluetooth')
   // our fork reconnects to a known device without the chooser; it remembers the MAC it learned the first time

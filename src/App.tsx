@@ -1,9 +1,9 @@
 import { AnimatePresence, motion, MotionConfig } from 'motion/react'
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { ChartIcon, CloseIcon, ListIcon, Mark, SettingsIcon, TimerIcon } from './components/icons'
-import { answerMac, clearDeviceError, useDevices } from './lib/deviceStore'
+import { answerMac, autoConnectCube, clearDeviceError, useDevices } from './lib/deviceStore'
 import type { MacRequest } from './lib/moyu'
-import { useSettings, type ThemeName } from './lib/settings'
+import { getSettings, useSettings, type ThemeName } from './lib/settings'
 import { dismissToast, toast, useToast } from './lib/toast'
 import { InsightsPage } from './pages/InsightsPage'
 import { SettingsPage } from './pages/SettingsPage'
@@ -53,6 +53,10 @@ export default function App() {
     const onHash = () => setRoute(readRoute())
     window.addEventListener('hashchange', onHash)
     return () => window.removeEventListener('hashchange', onHash)
+  }, [])
+
+  useEffect(() => {
+    if (getSettings().input === 'smartcube') void autoConnectCube()
   }, [])
 
   useEffect(() => {

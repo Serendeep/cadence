@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react'
 import {
-  connectGan, connectGanTimer, connectOtherCube, connectStackmat, errorMessage, RECONNECT_DELAYS_MS, retryWithBackoff,
+  bluetoothAvailable, connectGan, connectGanTimer, connectOtherCube, connectStackmat, errorMessage, knownDevices, RECONNECT_DELAYS_MS, retryWithBackoff, whenInRange,
   type ExternalTimerConnection, type SmartCubeConnection, type SmartCubeHandlers,
 } from './devices'
 import { diag } from './diag'
@@ -161,15 +161,59 @@ function cubeLost(gen: number): void {
   whenNotSolving(() => gen === cubeGen && set({ cube: null }))
 }
 
-export async function connectCube(kind: CubeKind): Promise<void> {
+const LAST_CUBE = 'cadence:last-cube'
+const CUBE_KINDS: readonly CubeKind[] = ['gan', 'moyu32', 'moyu', 'other']
+// names each driver's chooser filters on, to pick a remembered device back out of the browser's list
+const CUBE_NAMES: Record<Exclude<CubeKind, 'other'>, RegExp> = { gan: /^(GAN|MG|AiCube)/, moyu32: /^WCU_MY3/, moyu: /^MHC/ }
+// how long a freshly opened app keeps listening for a remembered cube to be switched on
+const AUTO_CONNECT_WAIT_MS = 120_000
+
+function lastCube(): CubeKind | null {
+  try {
+    const k = localStorage.getItem(LAST_CUBE)
+    return CUBE_KINDS.find((c) => c === k) ?? null
+  } catch {
+    return null
+  }
+}
+
+let autoTried = false
+
+/** On launch, reopens the last cube without the chooser once it is switched on; else offers a one-tap connect, since the chooser needs a tap. */
+export async function autoConnectCube(): Promise<void> {
+  const kind = lastCube()
+  if (autoTried || !kind || state.cube || state.connecting || !bluetoothAvailable()) return
+  autoTried = true
+  const gen = cubeGen
+  const offer = () => toast(`${LABELS[kind]} not connected`, { label: 'Connect', run: () => void connectCube(kind) }, 15000)
+  const device = kind === 'other' ? undefined : (await knownDevices()).find((d) => CUBE_NAMES[kind].test(d.name ?? ''))
+  diag('device.auto', { kind, known: device != null })
+  if (gen !== cubeGen) return
+  if (!device) return offer()
+  set({ connecting: LABELS[kind] })
+  const seen = await whenInRange(device, AUTO_CONNECT_WAIT_MS, () => gen !== cubeGen)
+  if (gen !== cubeGen) return
+  if (!seen) {
+    set({ connecting: null })
+    return offer()
+  }
+  await connectCube(kind, device)
+}
+
+export async function connectCube(kind: CubeKind, device?: BluetoothDevice): Promise<void> {
   disconnectCube()
   const gen = cubeGen
   set({ connecting: LABELS[kind], error: null })
   resetCubeOrientation()
   try {
-    cubeConn = await openCube(kind, gen)
+    cubeConn = await openCube(kind, gen, device)
     set({ cube: { name: cubeConn.name, battery: null }, connecting: null })
     diag('device.connected', { kind, name: cubeConn.name })
+    try {
+      localStorage.setItem(LAST_CUBE, kind)
+    } catch {
+      // storage blocked: the next launch just shows the input menu as before
+    }
   } catch (e) {
     diag('device.connect.failed', { kind, error: e }, 'error')
     set({ connecting: null, error: `Could not connect the ${LABELS[kind]}: ${errorMessage(e)}` })

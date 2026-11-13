@@ -271,6 +271,8 @@ textarea { width: 100%; resize: vertical; min-height: 72px; }
 
 /* ---------- smart cube lab ---------- */
 .lab { display: grid; grid-template-columns: minmax(280px, 1fr) minmax(320px, 1fr); grid-template-rows: auto 1fr auto; gap: 18px 48px; min-height: 100%; padding-top: 22px; }
+/* the move ticker never wraps; without this its width stretches the column and pushes the cube off a phone screen */
+.lab > * { min-width: 0; }
 .lab .conn { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--dim); flex-wrap: wrap; }
 .lab .conn i.live { width: 8px; height: 8px; border-radius: 50%; background: var(--good); }
 .lab .conn .drill-banner { flex-basis: 100%; }
