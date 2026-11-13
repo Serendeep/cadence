@@ -4,7 +4,7 @@
  * src/js/hardware/moyucube.js (MHC*: original WeiLong AI, plain).
  */
 import aesjs from 'aes-js'
-import type { SmartCubeConnection, SmartCubeHandlers } from './devices'
+import { advertisementsNeverFire, type SmartCubeConnection, type SmartCubeHandlers } from './devices'
 import { moyuToScreen, type Quat } from './orientation'
 import { diag } from './diag'
 
@@ -121,10 +121,6 @@ export function parseMy32(bytes: number[]): My32Message {
   }
   return { type: 'moves', moveCount: bits(v, 88, 96), moves, gaps }
 }
-
-const platform = () => (navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData?.platform
-// watchAdvertisements exists on Linux/ChromeOS but never fires there
-const advertisementsNeverFire = () => platform() === 'Linux' || platform() === 'Chrome OS'
 
 /** The address is the last 6 bytes of the manufacturer data, in reverse order. */
 async function macFromAdvertisement(device: BluetoothDevice): Promise<string | null> {
