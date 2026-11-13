@@ -8,6 +8,15 @@ export interface Release {
 /** What each version changed, newest first, in words for people who solve rather than people who code. */
 export const CHANGELOG: Release[] = [
   {
+    version: '0.1.7',
+    date: '2026-11-13',
+    changes: [
+      'On a phone, the smart cube no longer slides off screen as your moves pile up during a solve.',
+      'Cadence reconnects your last smart cube when it opens. Where the browser cannot do that on its own, one tap on Connect does it.',
+      'The guides are easier to read.',
+    ],
+  },
+  {
     version: '0.1.6',
     date: '2026-11-10',
     changes: [
